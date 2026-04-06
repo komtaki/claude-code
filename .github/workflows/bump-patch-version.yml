@@ -1,0 +1,69 @@
+name: Bump patch version
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - git/**
+      - write/**
+
+permissions:
+  contents: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed plugin directories
+        id: detect
+        run: |
+          CHANGED_DIRS=$(git diff --name-only HEAD~1 HEAD | cut -d/ -f1 | sort -u)
+          TARGETS=""
+          for dir in git write; do
+            if echo "$CHANGED_DIRS" | grep -qx "$dir"; then
+              TARGETS="$TARGETS $dir"
+            fi
+          done
+          TARGETS=$(echo "$TARGETS" | xargs)
+          echo "targets=$TARGETS" >> "$GITHUB_OUTPUT"
+          echo "Changed plugin directories: $TARGETS"
+
+      - name: Bump patch version
+        if: steps.detect.outputs.targets != ''
+        run: |
+          for dir in ${{ steps.detect.outputs.targets }}; do
+            PLUGIN_JSON="$dir/.claude-plugin/plugin.json"
+            if [ ! -f "$PLUGIN_JSON" ]; then
+              echo "Skip: $PLUGIN_JSON not found"
+              continue
+            fi
+
+            CURRENT=$(jq -r .version "$PLUGIN_JSON")
+            MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+            MINOR=$(echo "$CURRENT" | cut -d. -f2)
+            PATCH=$(echo "$CURRENT" | cut -d. -f3)
+            NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+
+            jq --arg v "$NEW_VERSION" '.version = $v' "$PLUGIN_JSON" > tmp.json
+            mv tmp.json "$PLUGIN_JSON"
+
+            echo "$dir: $CURRENT -> $NEW_VERSION"
+          done
+
+      - name: Commit and push
+        if: steps.detect.outputs.targets != ''
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No version changes to commit"
+            exit 0
+          fi
+          git commit -m "chore: bump patch version [skip ci]"
+          git push
