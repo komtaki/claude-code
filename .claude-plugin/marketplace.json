@@ -8,7 +8,12 @@
     {
       "name": "git",
       "source": "./git",
-      "description": "Git開発汎用プラグイン"
+      "description": "Git操作汎用プラグイン"
+    },
+    {
+      "name": "pr",
+      "source": "./pr",
+      "description": "Pull Request操作プラグイン"
     },
     {
       "name": "write",

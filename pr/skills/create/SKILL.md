@@ -1,8 +1,8 @@
 ---
-description: PR(Pull Request)作成・更新手順。
+description: PR(Pull Request)作成手順。
 ---
 
-# PR 作成・更新手順
+# PR 作成手順
 
 日本語でのコミュニケーションを基本とする。
 
