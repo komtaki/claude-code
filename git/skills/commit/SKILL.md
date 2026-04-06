@@ -5,6 +5,8 @@ description: Git Commitを作成する時に使用する。「コミットして
 
 # Git Commit 手順
 
+コミット内容の確認やコミットメッセージの承認は不要。
+
 sandbox外で必ず 1Password で署名をつける。日本語の commit 名にする。
 
 ## commit フォーマット
