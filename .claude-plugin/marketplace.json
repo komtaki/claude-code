@@ -1,0 +1,19 @@
+{
+  "name": "komtaki-marketplace",
+  "description": "Komtaki's personal plugins marketplace",
+  "owner": {
+    "name": "komtaki"
+  },
+  "plugins": [
+    {
+      "name": "git",
+      "source": "./git",
+      "description": "Git開発汎用プラグイン"
+    },
+    {
+      "name": "write",
+      "source": "./write",
+      "description": "文章執筆汎用プラグイン"
+    }
+  ]
+}
