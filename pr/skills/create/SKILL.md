@@ -1,5 +1,6 @@
 ---
-description: PR(Pull Request)作成手順。
+name: create
+description: PR(Pull Request)を作成する時に使用する。「PR作成」「PRを作る」「pull request」「PR出して」などのキーワードでトリガーされる。
 ---
 
 # PR 作成手順
