@@ -4,9 +4,10 @@ on:
   push:
     branches:
       - main
-    paths:
-      - git/**
-      - write/**
+    paths-ignore:
+      - .github/**
+      - .claude-plugin/**
+      - "*.md"
 
 permissions:
   contents: write
@@ -23,8 +24,9 @@ jobs:
         id: detect
         run: |
           CHANGED_DIRS=$(git diff --name-only HEAD~1 HEAD | cut -d/ -f1 | sort -u)
+          PLUGIN_DIRS=$(find . -path '*/.claude-plugin/plugin.json' -maxdepth 3 | sed 's|^\./||' | cut -d/ -f1 | sort -u)
           TARGETS=""
-          for dir in git write; do
+          for dir in $PLUGIN_DIRS; do
             if echo "$CHANGED_DIRS" | grep -qx "$dir"; then
               TARGETS="$TARGETS $dir"
             fi
@@ -38,11 +40,6 @@ jobs:
         run: |
           for dir in ${{ steps.detect.outputs.targets }}; do
             PLUGIN_JSON="$dir/.claude-plugin/plugin.json"
-            if [ ! -f "$PLUGIN_JSON" ]; then
-              echo "Skip: $PLUGIN_JSON not found"
-              continue
-            fi
-
             CURRENT=$(jq -r .version "$PLUGIN_JSON")
             MAJOR=$(echo "$CURRENT" | cut -d. -f1)
             MINOR=$(echo "$CURRENT" | cut -d. -f2)
