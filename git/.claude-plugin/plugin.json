@@ -1,0 +1,7 @@
+{
+  "name": "git",
+  "description": "gitで開発する時の汎用プラグイン",
+  "version": "0.1.0",
+  "repository": "https://github.com/komtaki/claude-code",
+  "license": "MIT"
+}
