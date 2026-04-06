@@ -1,5 +1,6 @@
 ---
-description: 削除済みブランチとworktreeのクリーンアップ。
+name: cleanup
+description: 削除済みブランチとworktreeをクリーンアップする時に使用する。「cleanup」「クリーンアップ」「ブランチ整理」「不要なブランチを削除」などのキーワードでトリガーされる。
 ---
 
 # Git Cleanup: 削除済みブランチとWorktreeの削除
@@ -20,7 +21,7 @@ git fetch --prune
 ### 2. mainブランチにきりかえ
 
 ```bash
-git swith main
+git switch main
 ```
 
 ### 3. 不要なworktreeを削除

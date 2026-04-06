@@ -1,5 +1,6 @@
 ---
-description: 指定されたPRをmainにrebaseしてpushする。「rebase」「rebase push」「PRをrebase」と言われた時に使用する。
+name: rebase-push
+description: PRをmainにrebaseしてforce-pushする時に使用する。「rebase」「rebase push」「PRをrebase」「リベース」などのキーワードでトリガーされる。
 ---
 
 # PR Rebase & Push 手順
