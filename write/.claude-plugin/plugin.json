@@ -1,7 +1,7 @@
 {
   "name": "write",
   "description": "技術文章を書くための汎用skill",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "repository": "https://github.com/komtaki/claude-code",
   "license": "MIT"
 }
