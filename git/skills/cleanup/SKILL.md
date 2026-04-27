@@ -27,14 +27,15 @@ git switch main
 ### 3. 不要なworktreeを削除
 
 worktreeが参照しているブランチは削除できないため、ブランチ削除より先に実行する。
+プライマリーworktree（`git worktree list` の最初の行）は対象外。
 
 ```bash
-# 現在のworktree一覧を表示
 git worktree list
 ```
 
-各worktreeについて:
-1. `git -C <worktree_path> status --short` で未コミットの変更を確認
+各副worktreeについて、ブランチ種別（main / feature / detached）や origin に対する `behind` / `ahead` を問わず:
+
+1. `git -C <worktree_path> status --short` で未コミット変更を確認
 2. **変更なし** → `git worktree remove <path>` で削除
 3. **変更あり** → スキップ（最後に報告）
 
