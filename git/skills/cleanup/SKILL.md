@@ -65,6 +65,23 @@ git branch -vv | grep -v '\[origin/' | grep -v '^\*' | grep -v '^+' | grep -v '^
 
 該当ブランチがあれば `git branch -D` で一括削除する。
 
+#### 4c. mainにマージ済み（patch-id一致）のブランチ
+
+`git cherry` は `<branch>` のコミットがpatch-id上 `main` に取り込み済みかを判定する。
+squash-merge / merge commit / rebase-merge いずれの取り込み方でも検出できる。
+worktreeに紐づくブランチと `main` / `master` は対象外。
+
+```bash
+git for-each-ref --format='%(refname:short) %(worktreepath)' refs/heads/ |
+  while read branch wt; do
+    case "$branch" in main|master) continue ;; esac
+    [ -n "$wt" ] && continue
+    git cherry main "$branch" | grep -q '^+' || git branch -D "$branch"
+  done
+```
+
+`+` 行が無い = 全コミットがmainに取り込み済み → 削除する。
+
 ### 5. サマリーを出力
 
 最後に以下をまとめて報告する:
