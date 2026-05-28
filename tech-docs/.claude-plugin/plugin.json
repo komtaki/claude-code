@@ -1,0 +1,7 @@
+{
+  "name": "tech-docs",
+  "description": "技術文章の執筆とレビューを支援する汎用skill",
+  "version": "0.1.1",
+  "repository": "https://github.com/komtaki/claude-code",
+  "license": "MIT"
+}

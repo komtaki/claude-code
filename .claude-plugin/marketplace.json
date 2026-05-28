@@ -16,9 +16,9 @@
       "description": "Pull Request操作プラグイン"
     },
     {
-      "name": "write",
-      "source": "./write",
-      "description": "文章執筆汎用プラグイン"
+      "name": "tech-docs",
+      "source": "./tech-docs",
+      "description": "技術文章の執筆・レビュー汎用プラグイン"
     }
   ]
 }
