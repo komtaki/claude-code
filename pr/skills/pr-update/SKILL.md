@@ -1,5 +1,5 @@
 ---
-name: update
+name: pr-update
 description: PR本文を実装差分に合わせて更新する時に使用する。「PR更新」「PR本文を更新」「update pr」「PR description更新」などのキーワードでトリガーされる。
 ---
 

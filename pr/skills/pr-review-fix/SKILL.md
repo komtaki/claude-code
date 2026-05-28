@@ -1,5 +1,5 @@
 ---
-name: review-fix
+name: pr-review-fix
 description: PRのレビューコメントを確認・対応する時に使用する。「レビュー確認」「レビューコメント見て」「review comments」「PRのコメント確認」などのキーワードでトリガーされる。
 ---
 
