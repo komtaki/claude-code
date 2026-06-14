@@ -11,7 +11,7 @@ commitスキルの手順でコミットした後、リモートにpushする。
 
 ### 1. Commit
 
-Skill toolで `/git:commit` を呼び出してコミットを作成する。
+Skill toolで `/develop:commit` を呼び出してコミットを作成する。
 
 ### 2. Push
 

@@ -1,7 +1,0 @@
-{
-  "name": "pr",
-  "description": "Pull Request操作の汎用プラグイン",
-  "version": "0.1.11",
-  "repository": "https://github.com/komtaki/claude-code",
-  "license": "MIT"
-}
