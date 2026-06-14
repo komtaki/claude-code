@@ -8,7 +8,7 @@
     {
       "name": "develop",
       "source": "./develop",
-      "description": "開発全般を支援する汎用プラグイン（Git操作・PR管理・技術文章）"
+      "description": "開発全般を支援する汎用プラグイン"
     }
   ]
 }
