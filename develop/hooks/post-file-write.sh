@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PostToolUse hook: ファイル保存後に末尾空白除去と末尾改行付与を行う
 set -euo pipefail
 

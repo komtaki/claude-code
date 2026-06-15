@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # UserPromptSubmit hook: タグを検出して skill の利用を指示
 set -euo pipefail
 
