@@ -18,11 +18,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path' | xargs sed -i '' -e '$a\\'"
-          },
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path' | xargs sed -i '' 's/[[:space:]]*$//'"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/post-file-write.sh\"",
+            "timeout": 5
           }
         ]
       }
@@ -33,7 +30,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit-create-pr.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit-create-pr.sh\"",
+            "timeout": 5
           }
         ]
       }
