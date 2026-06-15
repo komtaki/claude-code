@@ -30,7 +30,7 @@ while IFS= read -r segment; do
     GIT_COMMIT_CMD="$trimmed"
     break
   fi
-done < <(printf '%s\n' "$COMMAND" | sed 's/&&/\n/g; s/;/\n/g; s/|/\n/g')
+done < <(printf '%s\n' "$COMMAND" | sed 's/&&/\n/g; s/;/\n/g')
 
 # PASS: no git commit found in command
 if [ -z "$GIT_COMMIT_CMD" ]; then

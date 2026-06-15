@@ -3,9 +3,9 @@
 set -euo pipefail
 
 input=$(cat)
-prompt=$(echo "$input" | jq -r '.prompt // empty')
+prompt=$(printf '%s' "$input" | jq -r '.prompt // empty')
 
-if echo "$prompt" | grep -q '<create-pr-command>'; then
+if printf '%s\n' "$prompt" | grep -q '<create-pr-command>'; then
   cat <<'EOF'
 {
   "hookSpecificOutput": {
