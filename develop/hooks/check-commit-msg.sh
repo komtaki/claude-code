@@ -21,28 +21,23 @@ if printf '%s\n' "$COMMAND" | grep -qE '^\s*gh\b'; then
   exit 0
 fi
 
-# Split compound commands on &&, ;, | and find the first git commit segment.
-# Add trailing newline so `read` captures the last segment correctly.
-GIT_COMMIT_CMD=""
-while IFS= read -r segment; do
-  trimmed=$(printf '%s' "$segment" | sed 's/^[[:space:]]*//')
-  if printf '%s\n' "$trimmed" | grep -qE '^git\s+commit\b'; then
-    GIT_COMMIT_CMD="$trimmed"
-    break
-  fi
-done < <(printf '%s\n' "$COMMAND" | sed 's/&&/\n/g; s/;/\n/g')
-
 # PASS: no git commit found in command
-if [ -z "$GIT_COMMIT_CMD" ]; then
+if ! printf '%s\n' "$COMMAND" | grep -qE '\bgit\s+commit\b'; then
   exit 0
 fi
 
-# Extract the -m / --message value via perl (handles single/double quotes and escaped chars).
-MSG=$(printf '%s' "$GIT_COMMIT_CMD" | \
+# Extract the -m / --message value via perl (handles single/double quotes and
+# escaped chars). Run against the whole command rather than a single line so
+# multi-line messages are not truncated: the quoted-string regexes use /s and a
+# negated character class, so they span newlines and stop at the real closing
+# quote (e.g. before a trailing `&& git log`). The unquoted fallback tolerates a
+# stray leading quote so an unterminated quote on the first line is not mistaken
+# for part of the message (e.g. "'feat:").
+MSG=$(printf '%s' "$COMMAND" | \
   perl -0777 -ne '
     if (/(?:-m|--message)\s+'\''([^'\'']+)'\''/s)  { print $1; exit }
     if (/(?:-m|--message)\s+"((?:[^"\\]|\\.)*)"/s) { (my $m=$1)=~s/\\(.)/$1/g; print $m; exit }
-    if (/(?:-m|--message)\s+(\S+)/s)               { print $1; exit }
+    if (/(?:-m|--message)\s+'\''?"?([^'\''"\s]+)/s) { print $1; exit }
   ' 2>/dev/null || true)
 
 # PASS: no -m flag found (e.g. using -F, --file, or interactive editor)
