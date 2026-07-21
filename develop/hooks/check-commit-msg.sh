@@ -33,8 +33,15 @@ fi
 # quote (e.g. before a trailing `&& git log`). The unquoted fallback tolerates a
 # stray leading quote so an unterminated quote on the first line is not mistaken
 # for part of the message (e.g. "'feat:").
+#
+# The first regex handles the heredoc command-substitution form that Claude
+# commonly emits, e.g. `-m "$(cat <<'EOF' ... EOF)"`. Without it the quoted
+# regexes would capture the literal `$(cat <<'EOF'` as the message and block a
+# valid commit. It matches the opening `<<[-]DELIM` (delimiter optionally quoted)
+# and captures the heredoc body up to the closing delimiter line.
 MSG=$(printf '%s' "$COMMAND" | \
   perl -0777 -ne '
+    if (/(?:-m|--message)\s+"?\$\(\s*cat\s*<<-?\s*["'\'']?(\w+)["'\'']?\r?\n(.*?)\r?\n[ \t]*\1\b/s) { print $2; exit }
     if (/(?:-m|--message)\s+'\''([^'\'']+)'\''/s)  { print $1; exit }
     if (/(?:-m|--message)\s+"((?:[^"\\]|\\.)*)"/s) { (my $m=$1)=~s/\\(.)/$1/g; print $m; exit }
     if (/(?:-m|--message)\s+'\''?"?([^'\''"\s]+)/s) { print $1; exit }
@@ -44,6 +51,13 @@ MSG=$(printf '%s' "$COMMAND" | \
 if [ -z "$MSG" ]; then
   exit 0
 fi
+
+# PASS: message is an unresolved command substitution (e.g. `-m "$(build-msg)"`).
+# The real message is produced at runtime, so it cannot be validated statically;
+# blocking on the literal `$(...)` text would be a false positive.
+case "$MSG" in
+  '$('*) exit 0 ;;
+esac
 
 # Validate only the first line of the message
 FIRST_LINE=$(printf '%s' "$MSG" | head -n1)
