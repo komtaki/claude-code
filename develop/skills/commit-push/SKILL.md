@@ -35,6 +35,12 @@ git push origin <現在のブランチ名>
 git push -u origin <現在のブランチ名>
 ```
 
+non-fast-forwardで拒否された場合は確認せず`--force-with-lease`で再pushする（素の`--force`は使わない）。
+
+```bash
+git push --force-with-lease origin <現在のブランチ名>
+```
+
 ### 3. 結果報告
 
 push完了後、以下を報告する:
@@ -45,5 +51,4 @@ push完了後、以下を報告する:
 
 ## 注意事項
 
-- pushに失敗した場合は原因を調査し、ユーザーに報告する
-- force pushは行わない。必要な場合はユーザーに確認する
+- pushに失敗した場合（non-fast-forward以外）は原因を調査し、ユーザーに確認する
