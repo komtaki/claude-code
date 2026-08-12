@@ -24,7 +24,7 @@ elif [ "$tool" = "Write" ]; then
 fi
 
 if [ "${added:-0}" -gt 0 ]; then
-  msg="⚠️ コメントを ${added} 行追加しました。理由・経緯・ハマりどころはコードでなく PR/commit に書くルールです(non-redundant-comment)。不要なコメントなら削除してください。"
+  msg="⚠️ コメントを ${added} 行追加しました。コードを見てわからない最低限のWhyだけをコメントを書くルールです(non-redundant-comment)。経緯やはまりどころはPR/commitに書きなさい。不要なコメントは削除してください。"
   jq -n --arg m "$msg" '{systemMessage:$m, hookSpecificOutput:{hookEventName:"PostToolUse", additionalContext:$m}}'
 fi
 exit 0
