@@ -24,22 +24,23 @@ block() {
   local skill_name="$1"
   local command_label="$2"
   local reason
-  reason="${command_label} を直接実行せず、先に Skill ツールで develop:${skill_name} を起動してください。
-
-このコマンドは develop:${skill_name} skill の手順に沿って実行する必要があります。
-Skill ツールで develop:${skill_name} を起動し、その手順の中で ${command_label} を実行してください。"
+  reason="${command_label} を直接実行せず、Skill ツールで develop:${skill_name} を起動し、その手順の中で実行してください。"
   printf '%s' "$reason" | jq -Rs '{decision: "block", reason: .}'
   exit 0
 }
 
-if printf '%s\n' "$COMMAND" | grep -qE '\bgh\s+pr\s+create\b'; then
+# 文字列中に "gh pr create" が含まれるだけの誤検知(コミットメッセージ等)を避けるため、
+# 実際にコマンドとして起動される位置(行頭 / && / || / ; / | の直後)だけにマッチさせる
+CMD_START='(^|&&|\|\||;|\|)[[:space:]]*'
+
+if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+create\b"; then
   if ! skill_invoked "pr-create"; then
     block "pr-create" "gh pr create"
   fi
   exit 0
 fi
 
-if printf '%s\n' "$COMMAND" | grep -qE '\bgh\s+pr\s+edit\b'; then
+if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+edit\b"; then
   if ! skill_invoked "pr-update"; then
     block "pr-update" "gh pr edit"
   fi
