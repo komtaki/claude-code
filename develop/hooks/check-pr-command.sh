@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# gh pr create / gh pr edit の直接実行をブロックし、対応する develop skill の起動を必須にする PreToolUse hook
 set -euo pipefail
 
 INPUT=$(cat)
@@ -14,6 +13,7 @@ if printf '%s\n' "$COMMAND" | grep -qE '\-\-help\b|(^|\s)-h(\s|$)'; then
   exit 0
 fi
 
+# hook は都度別プロセスで起動されるため、skill 起動済みかどうかの状態はファイルで受け渡す
 MARKER_FILE="${TMPDIR:-/tmp}/claude-pr-skill-invoked-${SESSION_ID}"
 
 skill_invoked() {
