@@ -16,3 +16,9 @@ gh pr view [PR_NUMBER] --json comments --jq '.[] | {author: .user.login, body: .
 ```sh
 gh api repos/[OWNER]/[REPO]/pulls/[PR_NUMBER]/comments --jq '.[] | select(.id == [COMMENT_ID])'
 ```
+
+### コメントへの返信方針
+
+コメント投稿者が **bot だと確定できる場合のみ**（`author.login` が `[bot]` サフィックス付き、または `user.type == "Bot"`）、1行で端的に返信する。
+
+それ以外（人間のレビュアーかどうか確定できない場合を含む）は、返信を自動送信せず、返信案を提示してユーザーに判断を委ねる。
