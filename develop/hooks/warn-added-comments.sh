@@ -10,7 +10,38 @@ case "$file" in
 esac
 
 count_comments() {
-  grep -cE '^[[:space:]]*(#|//|/\*|\*)' <<<"$1" 2>/dev/null || true
+  local text="$1"
+  local hash_re='^[[:space:]]*(#|//|/\*|\*)'
+  local dq='"""'
+  local tq="'''"
+  local open_re="^[[:space:]]*($dq|$tq)"
+  local count=0 in_doc=0 delim="" line after
+  while IFS= read -r line || [ -n "$line" ]; do
+    if [ "$in_doc" -eq 1 ]; then
+      count=$((count + 1))
+      case "$line" in
+      *"$delim"*) in_doc=0 ;;
+      esac
+      continue
+    fi
+    if [[ "$line" =~ $hash_re ]]; then
+      count=$((count + 1))
+      continue
+    fi
+    if [[ "$line" =~ $open_re ]]; then
+      count=$((count + 1))
+      case "$line" in
+      *"$dq"*) delim="$dq" ;;
+      *) delim="$tq" ;;
+      esac
+      after="${line#*"$delim"}"
+      case "$after" in
+      *"$delim"*) ;;
+      *) in_doc=1 ;;
+      esac
+    fi
+  done <<<"$text"
+  printf '%s\n' "$count"
 }
 
 added=0
