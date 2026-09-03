@@ -8,11 +8,13 @@ if [ -z "$COMMAND" ]; then
   exit 0
 fi
 
-# 文字列中に "gh issue comment" が含まれるだけの誤検知(コミットメッセージ等)を避けるため、
+# 文字列中に "gh issue comment" 等が含まれるだけの誤検知(コミットメッセージ等)を避けるため、
 # 実際にコマンドとして起動される位置(行頭 / && / || / ; / | の直後)だけにマッチさせる
 CMD_START='(^|&&|\|\||;|\|)[[:space:]]*'
+TARGET_SUBCOMMAND='gh[[:space:]]+(issue[[:space:]]+comment|pr[[:space:]]+comment|pr[[:space:]]+review)\b'
 
-if ! printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+issue[[:space:]]+comment\b"; then
+MATCHED=$(printf '%s\n' "$COMMAND" | grep -oE "${CMD_START}${TARGET_SUBCOMMAND}" 2>/dev/null | head -1 | grep -oE 'gh.*' 2>/dev/null || true)
+if [ -z "$MATCHED" ]; then
   exit 0
 fi
 
@@ -41,11 +43,11 @@ if printf '%s' "$BODY" | grep -qE '\(Claude\)[[:space:]]*$'; then
   exit 0
 fi
 
-REASON="gh issue comment の本文末尾に \"(Claude)\" が含まれていません。
+REASON="${MATCHED} の本文末尾に \"(Claude)\" が含まれていません。
 
 検出された本文: \"${BODY}\"
 
 本文の末尾に \"(Claude)\" を追加してから再実行してください。
-例: gh issue comment 123 --body '対応しました (Claude)'"
+例: ${MATCHED} 123 --body '対応しました (Claude)'"
 
 printf '%s' "$REASON" | jq -Rs '{decision: "block", reason: .}'
