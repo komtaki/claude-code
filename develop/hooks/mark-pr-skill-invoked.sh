@@ -8,6 +8,7 @@ SESSION_ID=$(printf '%s' "$INPUT" | jq -r '.session_id // "unknown"')
 case "$SKILL" in
   *pr-create) NAME="pr-create" ;;
   *pr-update) NAME="pr-update" ;;
+  *simplify) NAME="simplify" ;;
   *) exit 0 ;;
 esac
 
