@@ -21,12 +21,15 @@ skill_invoked() {
 }
 
 block() {
-  local skill_name="$1"
-  local command_label="$2"
-  local reason
-  reason="${command_label} を直接実行せず、Skill ツールで develop:${skill_name} を起動し、その手順の中で実行してください。"
+  local reason="$1"
   printf '%s' "$reason" | jq -Rs '{decision: "block", reason: .}'
   exit 0
+}
+
+block_use_skill() {
+  local skill_name="$1"
+  local command_label="$2"
+  block "${command_label} を直接実行せず、Skill ツールで develop:${skill_name} を起動し、その手順の中で実行してください。"
 }
 
 # 文字列中に "gh pr create" が含まれるだけの誤検知(コミットメッセージ等)を避けるため、
@@ -35,14 +38,17 @@ CMD_START='(^|&&|\|\||;|\|)[[:space:]]*'
 
 if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+create\b"; then
   if ! skill_invoked "pr-create"; then
-    block "pr-create" "gh pr create"
+    block_use_skill "pr-create" "gh pr create"
+  fi
+  if ! skill_invoked "simplify"; then
+    block "gh pr create の前に simplify スキルで差分をセルフレビューしてください（develop:pr-create の作成手順 手順3）。"
   fi
   exit 0
 fi
 
 if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+edit\b"; then
   if ! skill_invoked "pr-update"; then
-    block "pr-update" "gh pr edit"
+    block_use_skill "pr-update" "gh pr edit"
   fi
   exit 0
 fi
