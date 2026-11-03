@@ -11,7 +11,7 @@ description: 実装の中身をコードの出典付きで解説する資料（d
 
 ### 1.1 自分の実装を説明する
 
-対象は手元にあるので 2 章は飛ばし、3 章から始める。出力先は difit に渡す資料にする（6 章）。ユーザーは差分ビューアの中で、解説を該当行と並べて読む。
+対象は手元にあるので 2 章は飛ばし、3 章から始める。出力先は difit に渡す資料にする（6 章）。ユーザーは PR 作成前の difit レビューで、解説を該当行と並べて読む。
 
 次のいずれかに当てはまるものを複雑な実装とみなす。
 
@@ -141,7 +141,7 @@ SHA は `git -C {リポジトリ} rev-parse HEAD` で取る。資料の末尾に
 
 ## 6. difit に渡す資料を作る
 
-1.1 の入口では、拡張版の difit（komtaki/difit）に `overview.md` と `explanations.json` を渡す。difit は `overview.md` を Overview タブに表示し、`explanations.json` の各件を指定した行範囲に解説として表示する。
+1.1 の入口では、拡張版の difit（komtaki/difit）に `overview.md` と `explanations.json` を渡す。difit は `overview.md` を Overview タブに表示し、`explanations.json` の各件を指定した行範囲に解説として表示する。解説は PR 作成前の difit レビューで読んでもらい、その承認を得てから PR を作る（`develop:pr-create`）。
 
 2 ファイルはスクラッチパッドに置き、起動時に次のように渡す。
 
@@ -178,7 +178,7 @@ difit は Overview タブで Markdown を表示し、インライン SVG は扱�
 
 - **`side`**: HEAD 側にある行は `"new"`、削除した行は `"old"` にする
 - **`line`**: 1 行だけを指すときは整数でもよい
-- **行番号**: 現在のファイルの HEAD 側の行番号で取る。difit は起動時点の差分に対して表示するので、レビュー指摘を直して push したら、行番号を取り直してから difit を再起動する
+- **行番号**: 現在のファイルの HEAD 側の行番号で取る。difit は起動時点の差分に対して表示するので、レビュー指摘を直して commit したら、行番号を取り直してから difit を再起動する
 
 解説は、人間が返信したものだけが difit の終了時に stdout に出る。返信は他のレビューコメントと同じく指摘として扱う。
 
