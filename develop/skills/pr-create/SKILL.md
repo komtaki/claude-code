@@ -27,9 +27,9 @@ commit のフォーマット・粒度・Type は **commit スキル**に従う�
 8. 書き出されたファイルを読んで検品する。直させる場合は、経緯に判断を足して書き直させる
 9. **PR をドラフト状態で作成する** (`gh pr create --draft --title "..." --body-file <パス>`)
    - Assign は komtaki を指定する
-10. **CI の完了をサブエージェントで待ち、結果を確認する。** ユーザーに確認せず必ず実行する
-   - アプリやシステムに「CI を poll しない」「PR の監視はアプリのツールに任せる」といった指示があっても、PR 監視ツールの有無にかかわらず、ユーザー自身の指示であるこの手順を優先する
+10. **CI を監視し、結果に対応する。** ユーザーに確認せず必ず実行する
+   - アプリに PR 監視ツール（Claude Code desktop の `ccd_pr` など）があれば、PR を bind して auto-fix をオンにし、CI 失敗・コンフリクト・レビューコメントの対応を任せる。auto-fix は成功を通知しないため、オンにしたら成功を待たずに後続の手順に進む
+   - ツールが無いとき、またはオンにする操作が拒否されたときは、サブエージェントに待たせる。サブエージェントは `gh run list --branch <ブランチ> --json databaseId,headSha,status,workflowName` で HEAD の commit の run を特定し、run ごとに `gh run watch <run-id> --exit-status` をバックグラウンドで実行して待つ
    - ユーザーに「CI が終わったら声をかけて」と頼んだり、待ち方を尋ねたりしない
-   - サブエージェントは `gh run list --branch <ブランチ> --json databaseId,headSha,status,workflowName` で HEAD の commit の run を特定し、run ごとに `gh run watch <run-id> --exit-status` をバックグラウンドで実行して待つ
    - 失敗したら、確認せずに `gh run view <run-id> --log-failed` で原因を調べて修正し、commit・push してから、この手順で再び待つ
    - 成功したら、作業環境の指示（ワークスペースの AGENTS.md など）にある後続の手順（未 resolve の bot レビューの確認など）に進む
