@@ -146,7 +146,7 @@ SHA は `git -C {リポジトリ} rev-parse HEAD` で取る。資料の末尾に
 2 ファイルはスクラッチパッドに置き、起動時に次のように渡す。
 
 ```sh
-lensdiff --merge-base HEAD origin/main --context 100000 --overview {スクラッチパッド}/overview.md --comment "$(cat {スクラッチパッド}/explanations.json)"
+lensdiff --merge-base HEAD origin/main --overview {スクラッチパッド}/overview.md --comment "$(cat {スクラッチパッド}/explanations.json)"
 ```
 
 ### 6.1 overview.md に置くもの
