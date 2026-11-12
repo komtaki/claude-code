@@ -141,13 +141,13 @@ SHA は `git -C {リポジトリ} rev-parse HEAD` で取る。資料の末尾に
 
 ## 6. lensdiff に渡す資料を作る
 
-1.1 の入口では、`overview.md` と `explanations.json` をスクラッチパッドに作り、lensdiff の `--overview` と `--comment` で渡す。オプションと JSON の形式（解説は `kind: "explanation"`）、Overview タブで表示できるものは `lensdiff` スキルに従う。本章は何をどれだけ書くかを扱う。
+1.1 の入口では、`overview.md` と `explanations.json` をスクラッチパッドに作り、lensdiff の `--overview` と `--comment` で渡す。オプションと JSON の形式（解説は `kind: "explanation"`）、Overview タブで表示できるものは `lensdiff` スキル（無ければ `npx skills add komtaki/lensdiff` で入れる）に従う。本章は何をどれだけ書くかを扱う。
 
 ### 6.1 overview.md に置くもの
 
 次の節をこの順に置く。条件付きの節は、条件に当てはまる差分でだけ置く。
 
-- **全体像**: 5.1 の構成図を Mermaid で、差分が持つ観点ごとに 1 枚ずつ描く。1 枚に詰めると、データの形と処理の順序が混ざって読み取れないため。矢印のラベルと境界の条件は 5.1 に従い、境界は `subgraph` で囲む
+- **全体像**: 5.1 の構成図を Mermaid で、差分が持つ観点ごとに 1 枚ずつ描く。1 枚に詰めると、データの形と処理の順序が混ざって読み取れないため。矢印のラベルと境界の条件は 5.1 に従い、境界は `subgraph` で囲む。Overview は生の HTML・SVG を描画しないため、5.1 の公式アイコン（SVG 埋め込み）は使わない
   - 差分が処理の経路を変えるとき: リクエストから永続化・外部呼び出しまでを `flowchart` で描く
   - 差分がテーブル・カラムを追加・変更するとき: テーブル間の関係を `erDiagram` で描く。列の網羅は次のテーブル定義に書く
   - 差分が実行環境・デプロイ経路を変えるとき: その経路を `flowchart` で描く
