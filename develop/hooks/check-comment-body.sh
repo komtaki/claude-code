@@ -54,7 +54,6 @@ fi
 
 API_MATCHED=$(find_invoked "$API_SUBCOMMAND")
 if [ -n "$API_MATCHED" ]; then
-  # 'body=...' / "body=..." / body='...' / body="..." / body=... の順に探す。
   # -F / --field の値が @ で始まる場合はファイルから読むため静的検証できず、何も出力しない
   API_BODY=$(printf '%s' "$COMMAND" | \
     perl -0777 -ne '
