@@ -47,8 +47,8 @@ if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+
 fi
 
 if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+edit\b"; then
-  if ! skill_invoked "pr-update"; then
-    block_use_skill "pr-update" "gh pr edit"
+  if ! skill_invoked "ship"; then
+    block_use_skill "ship" "gh pr edit"
   fi
   exit 0
 fi

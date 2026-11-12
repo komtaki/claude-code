@@ -7,7 +7,6 @@ SESSION_ID=$(printf '%s' "$INPUT" | jq -r '.session_id // "unknown"')
 
 case "$SKILL" in
   ship | *:ship) NAME="ship" ;;
-  *pr-update) NAME="pr-update" ;;
   *simplify) NAME="simplify" ;;
   *) exit 0 ;;
 esac

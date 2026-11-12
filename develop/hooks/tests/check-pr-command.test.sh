@@ -97,13 +97,19 @@ rm -f "$(marker_file_for "$session")"
 
 session=$(new_session)
 out=$(run_hook 'gh pr edit 1 --title "x"' "$session")
-assert_block_contains "gh pr edit without pr-update blocks" "$out" "develop:pr-update"
+assert_block_contains "gh pr edit without ship blocks" "$out" "develop:ship"
 rm -f "$(marker_file_for "$session")"
 
 session=$(new_session)
 mark_invoked "$session" "pr-update"
 out=$(run_hook 'gh pr edit 1 --title "x"' "$session")
-assert_pass "gh pr edit with pr-update invoked passes" "$out"
+assert_block_contains "gh pr edit with only the removed pr-update marker blocks on ship" "$out" "develop:ship"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_session)
+mark_invoked "$session" "ship"
+out=$(run_hook 'gh pr edit 1 --title "x"' "$session")
+assert_pass "gh pr edit with ship invoked passes" "$out"
 rm -f "$(marker_file_for "$session")"
 
 session=$(new_session)
