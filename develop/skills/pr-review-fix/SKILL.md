@@ -25,10 +25,12 @@ gh api repos/[OWNER]/[REPO]/pulls/[PR_NUMBER]/comments --jq '.[] | select(.id ==
 
 それ以外（人間のレビュアーかどうか確定できない場合を含む）は、返信を自動送信せず、返信案を提示してユーザーに判断を委ねる。
 
+返信本文の末尾には ` (Claude)` を付ける。返信はユーザーのアカウントで投稿されるため、読み手が Claude の書いた返信だと見分けられるようにする。返信案を提示するときも、投稿済みの返信を編集するときも同じ。`gh pr comment` などは hook が末尾を検査するが、`gh api` で投稿する返信は検査されない。
+
 **インラインコメントへの個別返信**
 
 ```sh
-gh api repos/[OWNER]/[REPO]/pulls/[PR_NUMBER]/comments/[COMMENT_ID]/replies -f body="[REPLY_BODY]"
+gh api repos/[OWNER]/[REPO]/pulls/[PR_NUMBER]/comments/[COMMENT_ID]/replies -f body="[REPLY_BODY] (Claude)"
 ```
 
 ### コメントの resolve
