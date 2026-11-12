@@ -11,7 +11,7 @@ description: 自分の実装や他人の PR を、コードの出典付きで解
 
 ### 1.1 自分の実装を説明する
 
-対象は手元にあるので 2 章は飛ばし、3 章から始める。出力先は lensdiff に渡す資料にする（6 章）。
+対象は手元にあるので 2 章は飛ばし、3 章から始める。出力先は lensdiff に渡す資料にする（6 章）。この入口は `develop:ship` の「4.2 材料を作る」から呼ばれる。
 
 次のいずれかに当てはまるものを複雑な実装とみなす。
 
@@ -141,7 +141,7 @@ SHA は `git -C {リポジトリ} rev-parse HEAD` で取る。資料の末尾に
 
 ## 6. lensdiff に渡す資料を作る
 
-1.1 の入口では、`overview.md` と `explanations.json` をスクラッチパッドに作り、lensdiff の `--overview` と `--comment` で渡す。オプションと JSON の形式（解説は `kind: "explanation"`）、Overview タブで表示できるものは `lensdiff` スキルに従う。本章は何をどれだけ書くかを扱う。
+1.1 の入口では、`overview.md` と `explanations.json` をスクラッチパッドに作り、lensdiff の `--overview` と `--comment` で渡す。lensdiff の起動とレビューの受け方は `develop:ship` の「4. lensdiff レビュー」に従う。オプションと JSON の形式（解説は `kind: "explanation"`）、Overview タブで表示できるものは `lensdiff` スキルに従う。本章は何をどれだけ書くかを扱う。
 
 ### 6.1 overview.md に置くもの
 

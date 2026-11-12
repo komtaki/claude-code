@@ -15,21 +15,14 @@ commit のフォーマット・粒度・Type は **commit スキル**に従う�
 
 1. 現在のブランチとコミット状況を確認する
 2. デフォルトブランチにいる場合は、fetchして最新にする。そのあと差分から名前を決めて新しくブランチを作成する。
-3. **`simplify` スキルで差分（base ブランチとの差分全体）をセルフレビューする。** 指摘があれば適用し、追加の commit として積む（commit スキルの粒度・フォーマットに従う）。既に一部が push 済みでも、この時点で改めて実行し、指摘の修正を次の push に含める。
-4. **複雑な実装の場合は、`develop:code-describe` スキルで lensdiff に渡す資料（`overview.md` と `explanations.json`）を作る。** 該当するかの判断基準は同スキルの「呼び出しタイミングと適用範囲」にある。資料は依頼者のレビュー用なので、PR 本文には載せない
-5. **PR を作る前に、commit 済みのブランチで lensdiff（本家 difit のフォーク。本家 `difit` では代用できない）を起動してユーザーのレビューを受ける。** この lensdiff レビューが PR 作成前の承認になる
-   - 起動コマンドは `lensdiff --merge-base HEAD origin/main`。手順 4 で資料を作った場合は `--overview` と `--comment` で渡す。オプションと形式は `lensdiff` スキルに、中身は `develop:code-describe` の「lensdiff に渡す資料を作る」に従う
-   - インストール方法やバックグラウンド実行などの起動の詳細は、作業環境の指示（ワークスペースの AGENTS.md など）に従う
-   - 出力の最終行が `✅ Approved` なら、コメントの指摘を修正して commit し、lensdiff を再起動せずに次の手順に進む。Approve は、コメントを直せば再レビューは不要という意味のため
-   - `✅ Approved` なしで `📝 Comments from review session:` 付きのコメントが返ったら、修正して commit し、資料の行番号を取り直してから再度 lensdiff でレビューを受ける
-   - lensdiff が `📝 Comments from review session:` を出さずに exit code 0 で終了したら承認とみなし、次の手順に進む
-6. ブランチを remote に push (git push)
-7. **タイトル・本文は `Agent` ツールで `develop:pr-writer` を起動して書かせる。** ブランチ、ベースブランチ、差分から読み取れない経緯（事実のみ）を渡す
-8. 書き出されたファイルを読んで検品する。直させる場合は、経緯に判断を足して書き直させる
-9. **PR をドラフト状態で作成する** (`gh pr create --draft --title "..." --body-file <パス>`)
+3. **simplify・lensdiff の資料・lensdiff レビューは `develop:ship` の 2〜4 で済ませておく。** このスキルは `develop:ship` の PR 作成の段（push 以降）にあたる。ship を経ずに呼ばれたときも、`gh pr create` の前に `simplify` スキルで base との差分全体をセルフレビューする（門番 hook が simplify の起動を確かめる）
+4. ブランチを remote に push (git push)
+5. **タイトル・本文は `Agent` ツールで `develop:pr-writer` を起動して書かせる。** ブランチ、ベースブランチ、差分から読み取れない経緯（事実のみ）を渡す
+6. 書き出されたファイルを読んで検品する。直させる場合は、経緯に判断を足して書き直させる
+7. **PR をドラフト状態で作成する** (`gh pr create --draft --title "..." --body-file <パス>`)
    - Assign は komtaki を指定する
-10. **CI を監視し、結果に対応する。** ユーザーに確認せず必ず実行する
+8. **CI を監視し、結果に対応する。** ユーザーに確認せず必ず実行する
    - アプリに PR 監視ツール（Claude Code desktop の `ccd_pr` など）があれば、PR を bind して auto-fix をオンにし、CI 失敗・コンフリクト・レビューコメントの対応を任せる。auto-fix は成功を通知しないため、オンにしたら成功を待たずに後続の手順に進む
    - ツールを使えないときは、サブエージェントに待たせる。サブエージェントは `gh pr checks <PR 番号> --watch --fail-fast` をバックグラウンドで実行して待つ
    - 失敗したら、確認せずに、失敗した check のリンクから run を特定して `gh run view <run-id> --log-failed` で原因を調べて修正し、commit・push してから、この手順で再び待つ
-   - 成功したら、作業環境の指示（ワークスペースの AGENTS.md など）にある後続の手順（未 resolve の bot レビューの確認など）に進む
+   - 成功したら、`develop:ship` の「6. PR 作成後」（未 resolve の bot レビューの確認など）に進む
