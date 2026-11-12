@@ -5,7 +5,7 @@ description: 依頼を実装してから PR を作り、レビュー対応を終
 
 # ship: 依頼から PR マージ待ちまで
 
-「依頼から PR マージ待ちまで」の定義はここだけに置く。作業先の `AGENTS.md`・`CLAUDE.md` がゲートや手順を足すことがある（lensdiff レビューが要る PR の範囲、commit 前に読むページ、共有物の記録を書く hook など）。足された分は該当する段に差し込んで従い、食い違うときは作業先の指示を優先する。`<skill-dir>` はこのスキルのベースディレクトリ（起動時に示される絶対パス）、`<repo-dir>` は対象リポジトリのディレクトリを指す。
+作業先の `AGENTS.md`・`CLAUDE.md` がゲートや手順を足すことがある。足された分は該当する段に差し込んで従い、食い違うときは作業先の指示を優先する。
 
 ## 0. 始める前に
 
@@ -23,7 +23,7 @@ description: 依頼を実装してから PR を作り、レビュー対応を終
 
 ## 1. 差分の種類で段を決める
 
-commit 後に次を実行する。`<repo-dir>` は cwd からの相対パスでも絶対パスでもよく、リポジトリ内のどのディレクトリでもよい。`<session_id>` は分かるときだけ渡す（省略すると直近 24 時間の記録を見る）。
+commit 後に次を実行する。`<skill-dir>` はこのスキルのベースディレクトリ（起動時に示される絶対パス）。`<repo-dir>` は対象リポジトリのディレクトリで、cwd からの相対パスでも絶対パスでもよく、リポジトリ内のどのディレクトリでもよい。`<session_id>` は分かるときだけ渡す（省略すると直近 24 時間の記録を見る）。
 
 ```sh
 bash <skill-dir>/classify-diff.sh <repo-dir> <base> [session_id]
@@ -40,7 +40,7 @@ exit code が 0 以外なら、`origin/<base>` がないか古いので、fetch 
 | 段 | code | docs | shared |
 | --- | --- | --- | --- |
 | 実装 | サブエージェント | メイン可 | サブエージェント |
-| 資料（develop:code-describe） | 「lensdiff に渡す資料を作る」の条件に合えば | なし | 「対象外の参照元への影響」の節を必須 |
+| 資料（develop:code-describe） | 「自分の実装を説明する」の複雑な実装に当たれば | なし | 「対象外の参照元への影響」の節を必須（複雑な実装に当たらなくても作る） |
 | lensdiff レビュー | 必須（人の承認） | 必須（人の承認） | 必須（人の承認） |
 | AI レビュー | correctness ほか | 整合性だけ | 対象外の参照元の観点を必ず含める |
 | PR・bot レビュー確認 | 必須 | 必須 | 必須 |
@@ -86,7 +86,7 @@ command -v lensdiff >/dev/null || npm install -g https://github.com/komtaki/lens
 1. 1 の表で資料が要るときは、`develop:code-describe` の「lensdiff に渡す資料を作る」に従い `overview.md` と `explanations.json` を scratchpad に作る。
 2. `<repo-dir>` で `lensdiff --merge-base HEAD origin/<base>` をバックグラウンドで、サンドボックスを外して起動し、3 の `info`・`warn` を流す。`--merge-base` は値を取らないフラグで、`--merge-base origin/<base> HEAD` と書くと差分なしで待機する。`--background` は付けない（コメントが返らなくなる）。
 3. 終了を待って出力を読む。最終行が `✅ Approved`、または `📝 Comments from review session:` のヘッダなしで終了したら承認。指摘付きの承認なら、指摘を直して commit する。
-4. `✅ Approved` なしで指摘が返ったら、修正して commit し、資料の行番号を HEAD で取り直して 3〜4 をやり直す。
+4. `✅ Approved` なしで指摘が返ったら、修正して commit し、資料の行番号を HEAD で取り直して手順 2〜4 をやり直す。
 5. 承認したら、PR を作る HEAD で次を実行する。`<repo-dir>` はリポジトリの最上位にする（最上位でなければ何も書かずに失敗する）。approve.sh が marker を書き、プロジェクトの門番 hook がそれを読む。
 
 ```sh
@@ -106,7 +106,7 @@ bash <skill-dir>/approve.sh <repo-dir> <base>
 Greptile などの bot は指摘を残したまま check を pass にする。`gh pr checks` だけで完了と判断せず、`develop:pr-review-fix` の手順で未 resolve スレッドを取得し、対応して resolve する。
 
 - bot のコメントは push から数分遅れる。push 直後に空なら、約 5 分後に 1 回だけ取り直す。
-- bot の指摘・CI の修正・base の merge は push だけで進める（4 の「承認後は繰り返さない」）。人に再レビューを頼むときは、資料の行番号を取り直す。
+- bot の指摘・CI の修正・base の merge は push だけで進める（4 の「承認後は simplify と lensdiff を繰り返さない」）。人に再レビューを頼むときは、資料の行番号を取り直す。
 
 ### 報告
 
