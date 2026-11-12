@@ -37,8 +37,8 @@ block_use_skill() {
 CMD_START='(^|&&|\|\||;|\|)[[:space:]]*'
 
 if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+create\b"; then
-  if ! skill_invoked "pr-create"; then
-    block_use_skill "pr-create" "gh pr create"
+  if ! skill_invoked "ship"; then
+    block_use_skill "ship" "gh pr create"
   fi
   if ! skill_invoked "simplify"; then
     block "gh pr create の前に simplify スキルで差分をセルフレビューしてください（develop:ship）。"

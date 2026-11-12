@@ -1,6 +1,6 @@
 ---
 name: pr-writer
-description: PR のタイトルと本文を、差分と経緯から新規に書く時に使用する。develop:pr-create と develop:pr-update から起動される。
+description: PR のタイトルと本文を、差分と経緯から新規に書く時に使用する。develop:ship と develop:pr-update から起動される。
 tools: Bash, Read, Grep, Glob, Write
 ---
 

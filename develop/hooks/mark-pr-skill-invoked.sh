@@ -6,7 +6,7 @@ SKILL=$(printf '%s' "$INPUT" | jq -r '.tool_input.skill // ""')
 SESSION_ID=$(printf '%s' "$INPUT" | jq -r '.session_id // "unknown"')
 
 case "$SKILL" in
-  *pr-create) NAME="pr-create" ;;
+  ship | *:ship) NAME="ship" ;;
   *pr-update) NAME="pr-update" ;;
   *simplify) NAME="simplify" ;;
   *) exit 0 ;;
