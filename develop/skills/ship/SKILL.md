@@ -39,9 +39,9 @@ command -v lensdiff >/dev/null || npm install -g https://github.com/komtaki/lens
 [ -e ~/.claude/skills/lensdiff ] || npx skills add komtaki/lensdiff --skill lensdiff -g -a claude-code -y
 ```
 
-1. 複雑な実装と `shared` では、`develop:code-describe` で `overview.md` と `explanations.json` を作る。`shared` の `overview.md` には「対象外の参照元への影響」の節（参照元の数と、挙動が変わらない根拠または合意済みの変化）を置く。
-2. `<repo-dir>` で `lensdiff --merge-base HEAD origin/<base>` を、サンドボックスを外してバックグラウンドのシェルで起動し、`info`・`warn` を流す。
-3. 最終行が `✅ Approved`、またはコメントなしで終わったら承認。指摘付きの承認なら直して commit する。承認なしの指摘は、直して commit し、資料の行番号を取り直して 2 からやり直す。
+1. 差分の種類と規模によらず、`develop:code-describe` で `overview.md` と `explanations.json` を作る。小さい差分を理由に飛ばさない。小さく見える差分も既存の挙動に依存した判断を含むことがあり、その判断は資料がないとレビューで読み取れないため。`shared` の `overview.md` には「対象外の参照元への影響」の節（参照元の数と、挙動が変わらない根拠または合意済みの変化）を置く。
+2. `<repo-dir>` で `lensdiff --merge-base HEAD origin/<base> --overview <overview.md> --comment "$(cat <explanations.json>)" --comment "$(cat <findings.json>)"` を、サンドボックスを外してバックグラウンドのシェルで起動する。`<findings.json>` は「3. simplify と AI レビュー」の `info`・`warn` の指摘。`--overview` か `--comment` のない起動は、lensdiff がエラーで止める。
+3. 最終行が `✅ Approved`、またはコメントなしで終わったら承認。指摘付きの承認なら直して commit する。承認なしの指摘は、直して commit し、解説と指摘の行番号を取り直し、修正で増えた hunk の解説を足して 2 からやり直す。
 4. 承認したら `bash <skill-dir>/approve.sh <repo-top> <base>` で承認を記録する（プロジェクトの門番 hook が読む）。以降の修正は commit して 5 へ進む。
 
 ## 5. PR
