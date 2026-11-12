@@ -5,7 +5,7 @@ description: 依頼を実装して PR を作り、レビュー対応を終えて
 
 # ship: 依頼から PR マージ待ちまで
 
-ユーザーに聞くのは末尾の「止めて聞く場面」だけにし、それ以外は既定で決めて進め、決めたことを最後に報告する。作業先の `AGENTS.md`・`CLAUDE.md` が足す手順は該当する段に入れ、食い違えば作業先に従う。
+ユーザーに聞くのは末尾の「止めて聞く場面」だけにし、それ以外は既定で決めて進め、決めたことを最後に報告する。作業先の `AGENTS.md`・`CLAUDE.md` が足す手順は該当する段に入れ、食い違えば作業先に従う。4 の lensdiff レビューは、どの作業先でも行う。
 
 ## 1. 準備
 
@@ -26,7 +26,7 @@ commit は `develop:commit` に従う。署名に失敗したら `git -c commit.
 
 ## 3. simplify と AI レビュー
 
-`simplify` スキルで差分全体を 4 観点で見直し、意図した挙動を保つ指摘を採用する。続けて観点ごとにサブエージェントで AI レビューし、指摘を `kind: "finding"` の JSON で scratchpad に書かせる（`code` は correctness ほか、`docs` は整合性、`shared` は対象外の参照元を含める。2 の全体レビューを correctness とする）。`error` は直して commit し、`info`・`warn` は 4 で lensdiff に流す。lensdiff を省く PR では採否を自分で決めて commit する。
+`simplify` スキルで差分全体を 4 観点で見直し、意図した挙動を保つ指摘を採用する。続けて観点ごとにサブエージェントで AI レビューし、指摘を `kind: "finding"` の JSON で scratchpad に書かせる（`code` は correctness ほか、`docs` は整合性、`shared` は対象外の参照元を含める。2 の全体レビューを correctness とする）。`error` は直して commit し、`info`・`warn` は 4 で lensdiff に流す。
 
 ## 4. lensdiff レビュー
 
