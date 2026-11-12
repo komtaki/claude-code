@@ -77,6 +77,51 @@ assert_block "gh pr review missing (Claude) suffix" \
 assert_pass "gh pr review without --body has nothing to validate" \
   'gh pr review 14 --approve'
 
+assert_pass "gh api reply with -f body=\"...\" ending with (Claude)" \
+  'gh api repos/o/r/pulls/1/comments/2/replies -f body="対応しました (Claude)"'
+
+assert_block "gh api reply with -f body=\"...\" missing (Claude) suffix" \
+  'gh api repos/o/r/pulls/1/comments/2/replies -f body="対応しました"'
+
+assert_block "gh api PATCH with -f body='...' missing (Claude) suffix" \
+  "gh api -X PATCH repos/o/r/pulls/comments/3 -f body='修正' "
+
+assert_pass "gh api with -f body='...' ending with (Claude)" \
+  "gh api -X PATCH repos/o/r/pulls/comments/3 -f body='修正 (Claude)'"
+
+assert_pass "gh api with --raw-field 'body=...' ending with (Claude)" \
+  "gh api repos/o/r/issues/1/comments --raw-field 'body=対応しました (Claude)'"
+
+assert_block "gh api with --raw-field 'body=...' missing (Claude) suffix" \
+  "gh api repos/o/r/issues/1/comments --raw-field 'body=対応しました'"
+
+assert_pass "gh api with -F \"body=...\" ending with (Claude)" \
+  'gh api repos/o/r/issues/1/comments -F "body=対応しました (Claude)"'
+
+assert_block "gh api with -F \"body=...\" missing (Claude) suffix" \
+  'gh api repos/o/r/issues/1/comments -F "body=対応しました"'
+
+assert_block "gh api with --field body=unquoted missing (Claude) suffix" \
+  'gh api repos/o/r/issues/1/comments --field body=done'
+
+assert_block "gh api after && missing (Claude) suffix" \
+  'cd repo && gh api repos/o/r/pulls/1/comments/2/replies -f body="対応しました"'
+
+assert_pass "gh api graphql without body field is ignored" \
+  "gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: \"x\"}) { thread { id } } }'"
+
+assert_pass "gh api read without body field is ignored" \
+  "gh api repos/o/r/pulls/1/comments --jq '.[].body'"
+
+assert_pass "gh api -F body=@file cannot be validated statically" \
+  'gh api repos/o/r/pulls/1/comments/2/replies -F body=@reply.md'
+
+assert_pass "gh api unresolved command substitution cannot be validated statically" \
+  'gh api repos/o/r/pulls/1/comments/2/replies -f body="$(build-comment)"'
+
+assert_pass "gh api mentioned mid-string is not treated as the command" \
+  'git commit -m "fix: gh api -f body=x の挙動を修正"'
+
 if [ "$failures" -gt 0 ]; then
   echo "$failures test(s) failed"
   exit 1
