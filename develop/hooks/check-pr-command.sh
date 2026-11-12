@@ -29,7 +29,7 @@ block() {
 block_use_skill() {
   local skill_name="$1"
   local command_label="$2"
-  block "${command_label} を直接実行せず、Skill ツールで develop:${skill_name} を起動し、その手順の中で実行してください。"
+  block "${command_label} は、Skill ツールで develop:${skill_name} を起動し、その手順の中で実行してください。"
 }
 
 # 文字列中に "gh pr create" が含まれるだけの誤検知(コミットメッセージ等)を避けるため、
@@ -37,18 +37,18 @@ block_use_skill() {
 CMD_START='(^|&&|\|\||;|\|)[[:space:]]*'
 
 if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+create\b"; then
-  if ! skill_invoked "pr-create"; then
-    block_use_skill "pr-create" "gh pr create"
+  if ! skill_invoked "ship"; then
+    block_use_skill "ship" "gh pr create"
   fi
   if ! skill_invoked "simplify"; then
-    block "gh pr create の前に simplify スキルで差分をセルフレビューしてください（develop:pr-create の作成手順 手順3）。"
+    block "gh pr create の前に simplify スキルで差分をセルフレビューしてください（develop:ship）。"
   fi
   exit 0
 fi
 
 if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+edit\b"; then
-  if ! skill_invoked "pr-update"; then
-    block_use_skill "pr-update" "gh pr edit"
+  if ! skill_invoked "ship"; then
+    block_use_skill "ship" "gh pr edit"
   fi
   exit 0
 fi
