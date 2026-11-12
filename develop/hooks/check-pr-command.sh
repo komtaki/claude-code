@@ -29,7 +29,7 @@ block() {
 block_use_skill() {
   local skill_name="$1"
   local command_label="$2"
-  block "${command_label} を直接実行せず、Skill ツールで develop:${skill_name} を起動し、その手順の中で実行してください。"
+  block "${command_label} は、Skill ツールで develop:${skill_name} を起動し、その手順の中で実行してください。"
 }
 
 # 文字列中に "gh pr create" が含まれるだけの誤検知(コミットメッセージ等)を避けるため、
