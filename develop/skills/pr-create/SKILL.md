@@ -15,7 +15,7 @@ commit のフォーマット・粒度・Type は **commit スキル**に従う�
 
 1. 現在のブランチとコミット状況を確認する
 2. デフォルトブランチにいる場合は、fetchして最新にする。そのあと差分から名前を決めて新しくブランチを作成する。
-3. **simplify・lensdiff の資料・lensdiff レビューは `develop:ship` の 2〜4 で済ませておく。** このスキルは `develop:ship` の PR 作成の段（push 以降）にあたる。ship を経ずに呼ばれたときも、`gh pr create` の前に `simplify` スキルで base との差分全体をセルフレビューする（門番 hook が simplify の起動を確かめる）
+3. **simplify・lensdiff の資料・lensdiff レビューは `develop:ship` の 2〜4 で済ませておく。** このスキルは `develop:ship` の PR 作成の段（push 以降）にあたる
 4. ブランチを remote に push (git push)
 5. **タイトル・本文は `Agent` ツールで `develop:pr-writer` を起動して書かせる。** ブランチ、ベースブランチ、差分から読み取れない経緯（事実のみ）を渡す
 6. 書き出されたファイルを読んで検品する。直させる場合は、経緯に判断を足して書き直させる

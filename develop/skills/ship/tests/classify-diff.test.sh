@@ -88,15 +88,10 @@ setup_repo
 assert_eq "no_changes_is_code" code "$(bash "$classify" "$repo" main "$session")"
 
 setup_repo
-commit_files docs/a.md
-assert_eq "base_defaults_to_origin_head" docs "$(bash "$classify" "$repo")"
-
-setup_repo
 commit_files src/app.ts
 git_in update-ref refs/remotes/origin/feature HEAD
 commit_files docs/a.md
 assert_eq "stacked_base_compares_against_base_branch" docs "$(bash "$classify" "$repo" feature "$session")"
-assert_eq "stacked_without_base_sees_lower_code" code "$(bash "$classify" "$repo" "" "$session")"
 
 setup_repo
 commit_files src/app.ts
@@ -137,6 +132,12 @@ if check_missing_base; then
   echo "PASS: missing_base_exits_non_zero"
 else
   echo "FAIL: missing_base_exits_non_zero"
+  failures=$((failures + 1))
+fi
+if ! bash "$classify" "$repo" >/dev/null 2>&1; then
+  echo "PASS: omitted_base_exits_non_zero"
+else
+  echo "FAIL: omitted_base_exits_non_zero"
   failures=$((failures + 1))
 fi
 

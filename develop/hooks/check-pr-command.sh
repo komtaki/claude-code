@@ -41,7 +41,7 @@ if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+
     block_use_skill "pr-create" "gh pr create"
   fi
   if ! skill_invoked "simplify"; then
-    block "gh pr create の前に simplify スキルで差分をセルフレビューしてください（develop:ship の「2. 実装と simplify」）。"
+    block "gh pr create の前に simplify スキルで差分をセルフレビューしてください（develop:ship）。"
   fi
   exit 0
 fi
