@@ -1,6 +1,6 @@
 ---
 name: pr-writer
-description: PR のタイトルと本文を、差分と経緯から新規に書く時に使用する。develop:ship から起動される。
+description: PR のタイトルと本文を差分と経緯から新規に書き、gh pr create / gh pr edit で反映する時に使用する。develop:ship から起動される。
 tools: Bash, Read, Grep, Glob, Write
 ---
 
@@ -43,7 +43,11 @@ tools: Bash, Read, Grep, Glob, Write
 
 字数をコマンドで数える場合、`wc -m` はロケール依存で `LC_ALL=C` ではバイト数を返す。日本語では `LC_ALL=ja_JP.UTF-8 wc -m` か `python3 -c` で数える。
 
-## 出力
+## 反映
 
-- `gh pr create` も `gh pr edit` も実行しない
-- タイトルと本文を `$TMPDIR` 配下の**別々のファイル**に書き出し、そのパスを報告して終わる
+タイトルと本文を `$TMPDIR` 配下の別々のファイルに書き出し、自分で反映する。PR の本文を反映できるのは pr-writer だけ（`check-pr-command.sh` がメインエージェントからの反映を止める）。
+
+- 新規: `gh pr create --draft --base <base> --assignee komtaki --title "$(cat <タイトルのファイル>)" --body-file <本文のファイル>`
+- 更新: `gh pr edit <番号> --title "$(cat <タイトルのファイル>)" --body-file <本文のファイル>`
+
+PR の URL を報告して終わる。メインエージェントから検品の指摘が届いたら、本文のファイルを直して `gh pr edit` で反映し直す。

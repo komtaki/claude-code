@@ -46,12 +46,14 @@ command -v lensdiff >/dev/null || npm install -g https://github.com/komtaki/lens
 
 ## 5. PR
 
-1. push し、`develop:pr-writer` にブランチ・base・差分から読めない経緯を渡してタイトルと本文を書かせる。読んで検品し、未マージの依存があれば本文に書く。
-2. `gh pr create --draft --base <base> --assignee komtaki --title "..." --body-file <パス>`。
+PR のタイトルと本文は `develop:pr-writer` が書き、pr-writer 自身が `gh pr create`・`gh pr edit` で反映する。メインエージェントは本文を書き換えない。手直しが少量でも、書いた人と検品する人が分かれていないと検品にならないため（`check-pr-command.sh` がメインからの反映を止める）。
+
+1. push し、pr-writer にブランチ・base・差分から読めない経緯（未マージの依存、既定で決めたこと）を渡して、draft PR を作らせる。
+2. `gh pr view` で本文を読んで検品する。直す点は、同じ pr-writer に `SendMessage` で伝えて反映させる。
 3. CI は `ccd_pr` があれば bind して auto-fix に任せる。なければサブエージェントに `gh pr checks <番号> --watch --fail-fast` で待たせ、失敗は `gh run view <run-id> --log-failed` で原因を見て直す。
 4. bot は指摘を残したまま check を通すので、`develop:pr-review-fix` で未 resolve スレッドに対応する（push 直後に空なら約 5 分後に 1 回取り直す）。
-5. 差分が変わったら本文を更新する。`gh pr view --json body` から差分で読めない事実を拾い、pr-writer に書き直させて `gh pr edit` で反映する。
-6. 既定で決めたことを、最終報告と PR 本文の補足に並べる。
+5. 差分が変わったら本文を更新する。`gh pr view --json body` から差分で読めない事実を拾い、PR 番号と一緒に pr-writer に渡して書き直させる。
+6. 既定で決めたことを、最終報告に並べる。
 
 ## 止めて聞く場面
 
