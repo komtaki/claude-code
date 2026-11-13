@@ -45,7 +45,7 @@ tools: Bash, Read, Grep, Glob, Write
 
 ## 反映
 
-タイトルと本文を `$TMPDIR` 配下の別々のファイルに書き出し、自分で反映する。PR の本文を反映できるのは pr-writer だけ（`check-pr-command.sh` がメインエージェントからの反映を止める）。
+タイトルと本文を `$TMPDIR` 配下の別々のファイルに書き出し、自分で反映する。
 
 - 新規: `gh pr create --draft --base <base> --assignee komtaki --title "$(cat <タイトルのファイル>)" --body-file <本文のファイル>`
 - 更新: `gh pr edit <番号> --title "$(cat <タイトルのファイル>)" --body-file <本文のファイル>`
