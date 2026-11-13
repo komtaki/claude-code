@@ -13,9 +13,9 @@ marker_file_for() {
 }
 
 run_hook() {
-  local cmd="$1" session="$2"
-  jq -n --arg cmd "$cmd" --arg session "$session" \
-    '{tool_input:{command:$cmd}, session_id:$session}' | bash "$hook"
+  local cmd="$1" session="$2" agent_type="${3:-}"
+  jq -n --arg cmd "$cmd" --arg session "$session" --arg at "$agent_type" \
+    '{tool_input:{command:$cmd}, session_id:$session} + (if $at == "" then {} else {agent_type:$at} end)' | bash "$hook"
 }
 
 run_mark() {
@@ -77,14 +77,14 @@ rm -f "$(marker_file_for "$session")"
 session=$(new_session)
 mark_invoked "$session" "ship"
 mark_invoked "$session" "simplify"
-out=$(run_hook 'gh pr create --title "x" --body "y"' "$session")
-assert_pass "gh pr create with ship and simplify invoked passes" "$out"
+out=$(run_hook 'gh pr create --title "x" --body "y"' "$session" "develop:pr-writer")
+assert_pass "gh pr create from pr-writer with ship and simplify invoked passes" "$out"
 rm -f "$(marker_file_for "$session")"
 
 session=$(new_session)
 run_mark "develop:ship" "$session"
 run_mark "simplify" "$session"
-out=$(run_hook 'gh pr create --title "x" --body "y"' "$session")
+out=$(run_hook 'gh pr create --title "x" --body "y"' "$session" "develop:pr-writer")
 assert_pass "skills recorded by mark-pr-skill-invoked unlock gh pr create" "$out"
 rm -f "$(marker_file_for "$session")"
 
@@ -108,8 +108,82 @@ rm -f "$(marker_file_for "$session")"
 
 session=$(new_session)
 mark_invoked "$session" "ship"
+out=$(run_hook 'gh pr edit 1 --title "x"' "$session" "develop:pr-writer")
+assert_pass "gh pr edit --title from pr-writer with ship invoked passes" "$out"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_session)
+mark_invoked "$session" "ship"
+mark_invoked "$session" "simplify"
+out=$(run_hook 'gh pr create --title "x" --body "y"' "$session")
+assert_block_contains "gh pr create from the main agent blocks on pr-writer" "$out" "develop:pr-writer"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_session)
+mark_invoked "$session" "ship"
+mark_invoked "$session" "simplify"
+out=$(run_hook 'gh pr create --title "x" --body "y"' "$session" "general-purpose")
+assert_block_contains "gh pr create from another subagent blocks on pr-writer" "$out" "develop:pr-writer"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_session)
+mark_invoked "$session" "ship"
+out=$(run_hook 'gh pr edit 1 --body-file body.md' "$session")
+assert_block_contains "gh pr edit --body-file from the main agent blocks on pr-writer" "$out" "develop:pr-writer"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_session)
+mark_invoked "$session" "ship"
+out=$(run_hook 'gh pr edit 1 -F=body.md' "$session")
+assert_block_contains "gh pr edit -F=file from the main agent blocks on pr-writer" "$out" "develop:pr-writer"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_session)
+mark_invoked "$session" "ship"
 out=$(run_hook 'gh pr edit 1 --title "x"' "$session")
-assert_pass "gh pr edit with ship invoked passes" "$out"
+assert_block_contains "gh pr edit --title from the main agent blocks on pr-writer" "$out" "develop:pr-writer"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_session)
+mark_invoked "$session" "ship"
+out=$(run_hook 'gh pr edit 1 --body-file body.md' "$session" "develop:pr-writer")
+assert_pass "gh pr edit --body-file from pr-writer passes" "$out"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_session)
+mark_invoked "$session" "ship"
+out=$(run_hook 'gh pr edit 1 --add-label bug' "$session")
+assert_pass "gh pr edit --add-label from the main agent passes" "$out"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_session)
+mark_invoked "$session" "ship"
+out=$(run_hook 'gh pr edit 1 -Fbody.md' "$session")
+assert_block_contains "gh pr edit -Ffile from the main agent blocks on pr-writer" "$out" "develop:pr-writer"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_session)
+mark_invoked "$session" "ship"
+out=$(run_hook 'gh pr edit 1 -t"x"' "$session")
+assert_block_contains "gh pr edit -t\"x\" from the main agent blocks on pr-writer" "$out" "develop:pr-writer"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_session)
+mark_invoked "$session" "ship"
+out=$(run_hook 'gh pr edit 1 -Fbody.md' "$session" "develop:pr-writer")
+assert_pass "gh pr edit -Ffile from pr-writer passes" "$out"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_session)
+mark_invoked "$session" "ship"
+out=$(run_hook 'gh pr edit 1 --base main --fill' "$session")
+assert_pass "gh pr edit with long flags starting with b or f from the main agent passes" "$out"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_session)
+mark_invoked "$session" "ship"
+out=$(run_hook 'gh pr edit 1 --add-label x && grep -F y z' "$session")
+assert_pass "short flags in commands chained after gh pr edit are not checked" "$out"
 rm -f "$(marker_file_for "$session")"
 
 session=$(new_session)
