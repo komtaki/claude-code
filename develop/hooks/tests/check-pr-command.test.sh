@@ -14,13 +14,8 @@ marker_file_for() {
 
 run_hook() {
   local cmd="$1" session="$2" agent_type="${3:-}"
-  if [ -n "$agent_type" ]; then
-    jq -n --arg cmd "$cmd" --arg session "$session" --arg agent_type "$agent_type" \
-      '{tool_input:{command:$cmd}, session_id:$session, agent_type:$agent_type}' | bash "$hook"
-  else
-    jq -n --arg cmd "$cmd" --arg session "$session" \
-      '{tool_input:{command:$cmd}, session_id:$session}' | bash "$hook"
-  fi
+  jq -n --arg cmd "$cmd" --arg session "$session" --arg at "$agent_type" \
+    '{tool_input:{command:$cmd}, session_id:$session} + (if $at == "" then {} else {agent_type:$at} end)' | bash "$hook"
 }
 
 run_mark() {
@@ -183,6 +178,12 @@ session=$(new_session)
 mark_invoked "$session" "ship"
 out=$(run_hook 'gh pr edit 1 --base main --fill' "$session")
 assert_pass "gh pr edit with long flags starting with b or f from the main agent passes" "$out"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_session)
+mark_invoked "$session" "ship"
+out=$(run_hook 'gh pr edit 1 --add-label x && grep -F y z' "$session")
+assert_pass "short flags in commands chained after gh pr edit are not checked" "$out"
 rm -f "$(marker_file_for "$session")"
 
 session=$(new_session)
