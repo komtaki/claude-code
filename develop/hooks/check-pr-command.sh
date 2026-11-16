@@ -70,20 +70,27 @@ for i, token in enumerate(tokens):
 
 if not path or path == "-":
     sys.exit(0)
-path = os.path.join(data.get("cwd") or os.getcwd(), os.path.expanduser(path))
+path = os.path.join(data.get("cwd") or os.getcwd(), os.path.expanduser(os.path.expandvars(path)))
 try:
     with open(path, encoding="utf-8") as body:
-        print(len(body.read()))
+        print(f"count {len(body.read())}")
+except FileNotFoundError:
+    print(f"missing {path}")
 except (OSError, UnicodeDecodeError):
     pass
 '
 }
 
 block_if_body_too_long() {
-  local char_count
-  char_count=$(body_file_char_count || true)
-  if [ -n "$char_count" ] && [ "$char_count" -gt "$PR_BODY_MAX_CHARS" ]; then
-    block "PR 本文が ${char_count} 字で、上限の ${PR_BODY_MAX_CHARS} 字を超えています。差分を見れば分かること（変更したファイルや関数の列挙、コードの書き写し）や、CI の結果・実行したコマンドを削り、${PR_BODY_MAX_CHARS} 字以内にしてから反映し直してください。"
+  local result kind value
+  result=$(body_file_char_count || true)
+  kind="${result%% *}"
+  value="${result#* }"
+  if [ "$kind" = "missing" ]; then
+    block "PR 本文のファイル ${value} が見つからないため、字数を確かめられません。絶対パスで渡し直してください。"
+  fi
+  if [ "$kind" = "count" ] && [ "$value" -gt "$PR_BODY_MAX_CHARS" ]; then
+    block "PR 本文が ${value} 字で、上限の ${PR_BODY_MAX_CHARS} 字を超えています。差分を見れば分かること（変更したファイルや関数の列挙、コードの書き写し）や、CI の結果・実行したコマンドを削り、${PR_BODY_MAX_CHARS} 字以内にしてから反映し直してください。"
   fi
 }
 

@@ -18,13 +18,20 @@ run_hook() {
     '{tool_input:{command:$cmd}, session_id:$session} + (if $at == "" then {} else {agent_type:$at} end) + (if $cwd == "" then {} else {cwd:$cwd} end)' | bash "$hook"
 }
 
-body_dir=$(mktemp -d "${TMPDIR:-/tmp}/check-pr-command-test.XXXXXX")
+export TMPDIR="${TMPDIR:-/tmp}"
+body_dir=$(mktemp -d "$TMPDIR/check-pr-command-test.XXXXXX")
+body_dir_name="${body_dir##*/}"
 trap 'rm -rf "$body_dir"' EXIT
 
 write_body() {
   local path="$1" char="$2" count="$3"
   python3 -c 'import sys; open(sys.argv[1], "w", encoding="utf-8").write(sys.argv[2] * int(sys.argv[3]))' "$path" "$char" "$count"
 }
+
+write_body "$body_dir/ascii-1500.md" a 1500
+write_body "$body_dir/ascii-1501.md" a 1501
+write_body "$body_dir/ja-1500.md" あ 1500
+write_body "$body_dir/ja-1501.md" あ 1501
 
 new_ready_session() {
   local session
@@ -162,7 +169,7 @@ rm -f "$(marker_file_for "$session")"
 
 session=$(new_session)
 mark_invoked "$session" "ship"
-out=$(run_hook 'gh pr edit 1 --body-file body.md' "$session" "develop:pr-writer")
+out=$(run_hook "gh pr edit 1 --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
 assert_pass "gh pr edit --body-file from pr-writer passes" "$out"
 rm -f "$(marker_file_for "$session")"
 
@@ -186,7 +193,7 @@ rm -f "$(marker_file_for "$session")"
 
 session=$(new_session)
 mark_invoked "$session" "ship"
-out=$(run_hook 'gh pr edit 1 -Fbody.md' "$session" "develop:pr-writer")
+out=$(run_hook "gh pr edit 1 -F$body_dir/ascii-1500.md" "$session" "develop:pr-writer")
 assert_pass "gh pr edit -Ffile from pr-writer passes" "$out"
 rm -f "$(marker_file_for "$session")"
 
@@ -201,11 +208,6 @@ mark_invoked "$session" "ship"
 out=$(run_hook 'gh pr edit 1 --add-label x && grep -F y z' "$session")
 assert_pass "short flags in commands chained after gh pr edit are not checked" "$out"
 rm -f "$(marker_file_for "$session")"
-
-write_body "$body_dir/ascii-1500.md" a 1500
-write_body "$body_dir/ascii-1501.md" a 1501
-write_body "$body_dir/ja-1500.md" あ 1500
-write_body "$body_dir/ja-1501.md" あ 1501
 
 session=$(new_ready_session)
 out=$(run_hook "gh pr create --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
@@ -254,7 +256,32 @@ rm -f "$(marker_file_for "$session")"
 
 session=$(new_ready_session)
 out=$(run_hook "gh pr create --title x --body-file $body_dir/missing.md" "$session" "develop:pr-writer")
-assert_pass "missing --body-file is not checked" "$out"
+assert_block_contains "missing --body-file blocks" "$out" "見つからない"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_ready_session)
+out=$(run_hook "gh pr create --title x --body-file \"\$TMPDIR/$body_dir_name/ascii-1501.md\"" "$session" "develop:pr-writer")
+assert_block_contains "--body-file with \$TMPDIR and 1501 chars blocks" "$out" "1501 字"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_ready_session)
+out=$(run_hook "gh pr create --title x --body-file \"\$TMPDIR/$body_dir_name/ascii-1500.md\"" "$session" "develop:pr-writer")
+assert_pass "--body-file with \$TMPDIR and 1500 chars passes" "$out"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_ready_session)
+out=$(run_hook "gh pr edit 1 --body-file \${TMPDIR}/$body_dir_name/ascii-1501.md" "$session" "develop:pr-writer")
+assert_block_contains "--body-file with \${TMPDIR} and 1501 chars blocks" "$out" "1501 字"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_ready_session)
+out=$(run_hook "gh pr edit 1 --body-file \${TMPDIR}/$body_dir_name/ascii-1500.md" "$session" "develop:pr-writer")
+assert_pass "--body-file with \${TMPDIR} and 1500 chars passes" "$out"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_ready_session)
+out=$(run_hook "gh pr create --title x --body-file -" "$session" "develop:pr-writer")
+assert_pass "--body-file - (stdin) is not checked" "$out"
 rm -f "$(marker_file_for "$session")"
 
 session=$(new_ready_session)
