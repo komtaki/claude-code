@@ -26,12 +26,6 @@ block() {
   exit 0
 }
 
-block_use_skill() {
-  local skill_name="$1"
-  local command_label="$2"
-  block "${command_label} は、Skill ツールで develop:${skill_name} を起動し、その手順の中で実行してください。"
-}
-
 block_unless_pr_writer() {
   local agent_type
   agent_type=$(printf '%s' "$INPUT" | jq -r '.agent_type // ""')
@@ -47,30 +41,47 @@ body_file_char_count() {
 import json, os, shlex, sys
 
 data = json.load(sys.stdin)
-lexer = shlex.shlex(data["tool_input"]["command"], posix=True, punctuation_chars=";&|")
+command = data["tool_input"]["command"].replace("\\\n", "").replace("\n", ";")
+lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|")
 lexer.whitespace_split = True
 try:
     tokens = list(lexer)
 except ValueError:
+    print("unparsable")
     sys.exit(0)
 
 path = None
+inline_body = False
+has_cd = False
 in_pr_command = False
 for i, token in enumerate(tokens):
     if set(token) <= set(";&|"):
         in_pr_command = False
+    elif token == "cd" and (i == 0 or set(tokens[i - 1]) <= set(";&|")):
+        has_cd = True
     elif i >= 2 and tokens[i - 2:i] == ["gh", "pr"] and token in ("create", "edit"):
         in_pr_command = True
-    elif in_pr_command and token in ("--body-file", "-F") and i + 1 < len(tokens):
+    elif not in_pr_command:
+        continue
+    elif token in ("--body-file", "-F") and i + 1 < len(tokens):
         path = tokens[i + 1]
-    elif in_pr_command and token.startswith("--body-file="):
+    elif token.startswith("--body-file="):
         path = token[len("--body-file="):]
-    elif in_pr_command and token.startswith("-F") and len(token) > 2:
+    elif token.startswith("-F") and len(token) > 2:
         path = token[2:].removeprefix("=")
+    elif token == "--body" or token.startswith("--body=") or (token.startswith("-b") and not token.startswith("--")):
+        inline_body = True
 
-if not path or path == "-":
+if inline_body or path == "-":
+    print("inline")
     sys.exit(0)
-path = os.path.join(data.get("cwd") or os.getcwd(), os.path.expanduser(os.path.expandvars(path)))
+if not path:
+    sys.exit(0)
+path = os.path.expanduser(os.path.expandvars(path))
+if has_cd and not os.path.isabs(path):
+    print(f"relative_after_cd {path}")
+    sys.exit(0)
+path = os.path.join(data.get("cwd") or os.getcwd(), path)
 try:
     with open(path, encoding="utf-8") as body:
         print(f"count {len(body.read())}")
@@ -86,6 +97,15 @@ block_if_body_too_long() {
   result=$(body_file_char_count || true)
   kind="${result%% *}"
   value="${result#* }"
+  if [ "$kind" = "unparsable" ]; then
+    block "コマンドを解析できないため、PR 本文の字数を確かめられません。本文はファイルに書き、--body-file に絶対パスで渡して反映し直してください。"
+  fi
+  if [ "$kind" = "inline" ]; then
+    block "PR 本文は、ファイルに書いて --body-file に絶対パスで渡してください。--body・-b・--body-file - では字数を確かめられません。"
+  fi
+  if [ "$kind" = "relative_after_cd" ]; then
+    block "コマンド中に cd があるため、相対パスの本文ファイル ${value} がどこを指すか確かめられません。--body-file に絶対パスで渡し直してください。"
+  fi
   if [ "$kind" = "missing" ]; then
     block "PR 本文のファイル ${value} が見つからないため、字数を確かめられません。絶対パスで渡し直してください。"
   fi
@@ -99,9 +119,6 @@ block_if_body_too_long() {
 CMD_START='(^|&&|\|\||;|\|)[[:space:]]*'
 
 if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+create\b"; then
-  if ! skill_invoked "ship"; then
-    block_use_skill "ship" "gh pr create"
-  fi
   if ! skill_invoked "simplify"; then
     block "gh pr create の前に simplify スキルで差分をセルフレビューしてください（develop:ship）。"
   fi
@@ -111,13 +128,12 @@ if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+
 fi
 
 if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+edit\b"; then
-  if ! skill_invoked "ship"; then
-    block_use_skill "ship" "gh pr edit"
-  fi
   PR_EDIT_ARGS=$(printf '%s\n' "$COMMAND" | grep -oE "${CMD_START}gh[[:space:]]+pr[[:space:]]+edit\b([^;&|]|&[^&;|])*" || true)
   if printf '%s\n' "$PR_EDIT_ARGS" | grep -qE '(^|[[:space:]])((--title|--body|--body-file)([[:space:]=]|$)|-[tbF])'; then
     block_unless_pr_writer
-    block_if_body_too_long
+    if printf '%s\n' "$PR_EDIT_ARGS" | grep -qE '(^|[[:space:]])((--body|--body-file)([[:space:]=]|$)|-[bF])'; then
+      block_if_body_too_long
+    fi
   fi
   exit 0
 fi
