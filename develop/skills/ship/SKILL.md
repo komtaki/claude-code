@@ -20,7 +20,7 @@ description: 依頼を実装して PR を作り、レビュー対応を終えて
 - `code`: サブエージェントに任せる。
 - `shared`（共通関数・public API・既定値を変える）: サブエージェントに任せる。実装前に参照元を grep で全数挙げ、依頼の対象外の挙動は opt-in で保つ。対象外の挙動が変わるなら一覧を示して合意を取る。
 
-サブエージェントにはタスクごとに、要件だけを渡して実装（テストを先に書く）→ 別のサブエージェントでレビュー → Critical・Important を修正、を回す。3 回で収まらなければ能力の高いモデルに引き継ぐ。最後に最も能力の高いモデルでブランチ全体をレビューし、まとめて直す。進み具合は scratchpad の台帳に残す。成果物は inspection.md の A（`shared` は B、不具合の修正は C も）で、`docs` は D で検品してから受け取る。
+サブエージェントにはタスクごとに、要件だけを渡して実装（テストを先に書く）→ 別のサブエージェントでレビュー → Critical・Important を修正、を回す。3 回で収まらなければ能力の高いモデルに引き継ぐ。最後に最も能力の高いモデルでブランチ全体をレビューし、まとめて直す。進み具合は scratchpad の台帳に残す。
 
 不具合を直すときは、まず再現させ、原因をログ・コード・データなどの一次情報で突き止めてから直す。完了と報告する前にテストやコマンドを実行し、その出力を根拠として示す。
 
@@ -28,7 +28,7 @@ commit は `develop:commit` に従う。署名に失敗したら `git -c commit.
 
 ## 3. simplify と AI レビュー
 
-`simplify` スキルで差分全体を 4 観点で見直し、意図した挙動を保つ指摘を採用する。続けて観点ごとにサブエージェントで AI レビューし、指摘を `kind: "finding"` の JSON で scratchpad に書かせる（`code` は correctness ほか、`docs` は整合性、`shared` は対象外の参照元を含める。2 の全体レビューを correctness とする）。指摘は inspection.md の E で検品し、`error` は直して commit し、`info`・`warn` は 4 で lensdiff に流す。
+`simplify` スキルで差分全体を 4 観点で見直し、意図した挙動を保つ指摘を採用する。続けて観点ごとにサブエージェントで AI レビューし、指摘を `kind: "finding"` の JSON で scratchpad に書かせる（`code` は correctness ほか、`docs` は整合性、`shared` は対象外の参照元を含める。2 の全体レビューを correctness とする）。`error` は直して commit し、`info`・`warn` は 4 で lensdiff に流す。
 
 ## 4. lensdiff レビュー
 
@@ -39,7 +39,7 @@ command -v lensdiff >/dev/null || npm install -g https://github.com/komtaki/lens
 [ -e ~/.claude/skills/lensdiff ] || npx skills add komtaki/lensdiff --skill lensdiff -g -a claude-code -y
 ```
 
-1. `develop:code-describe` で `overview.md` と `explanations.json` を作り、inspection.md の F で検品する。`shared` の `overview.md` には「対象外の参照元への影響」の節（参照元の数と、挙動が変わらない根拠または合意済みの変化）を置く。
+1. `develop:code-describe` で `overview.md` と `explanations.json` を作る。`shared` の `overview.md` には「対象外の参照元への影響」の節（参照元の数と、挙動が変わらない根拠または合意済みの変化）を置く。
 2. `<repo-dir>` で `lensdiff --merge-base HEAD origin/<base> --overview <overview.md> --comment "$(cat <explanations.json>)" --comment "$(cat <findings.json>)"` を、サンドボックスを外してバックグラウンドのシェルで起動する。`<findings.json>` は「3. simplify と AI レビュー」の `info`・`warn` の指摘。
 3. 最終行が `✅ Approved`、またはコメントなしで終わったら承認。指摘付きの承認なら直して commit する。承認なしの指摘は、直して commit し、解説と指摘の行番号を取り直し、修正で増えた hunk の解説を足して 2 からやり直す。
 4. 承認したら `bash <skill-dir>/approve.sh <repo-top> <base>` で承認を記録する（プロジェクトの門番 hook が読む）。以降の修正は commit して 5 へ進む。
@@ -47,8 +47,8 @@ command -v lensdiff >/dev/null || npm install -g https://github.com/komtaki/lens
 ## 5. PR
 
 1. push し、`develop:pr-writer` にブランチ・base・差分から読めない経緯（未マージの依存、既定で決めたこと）を渡して、draft PR を作らせる。
-2. `gh pr view` で本文を inspection.md の G で検品し、直す点は同じ pr-writer に `SendMessage` で伝える。少量でも自分では直さない。書き手と検品者が分かれないと検品にならないため（`check-pr-command.sh` が止める）。
-3. CI は `ccd_pr` があれば bind して auto-fix に任せる。なければサブエージェントに `gh pr checks <番号> --watch --fail-fast` で待たせ、失敗は `gh run view <run-id> --log-failed` で原因を見て直す。直したものは 4 の対応も含めて inspection.md の H で検品する。
+2. `gh pr view` で本文を検品し、直す点は同じ pr-writer に `SendMessage` で伝える。少量でも自分では直さない。書き手と検品者が分かれないと検品にならないため（`check-pr-command.sh` が止める）。
+3. CI は `ccd_pr` があれば bind して auto-fix に任せる。なければサブエージェントに `gh pr checks <番号> --watch --fail-fast` で待たせ、失敗は `gh run view <run-id> --log-failed` で原因を見て直す。
 4. bot は指摘を残したまま check を通すので、`develop:pr-review-fix` で未 resolve スレッドに対応する（push 直後に空なら約 5 分後に 1 回取り直す）。
 5. 差分が変わったら、`gh pr view --json body` から差分で読めない事実を拾い、PR 番号と一緒に pr-writer に渡して書き直させる。
 6. 既定で決めたことを、最終報告に並べる。
