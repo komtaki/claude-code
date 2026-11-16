@@ -40,6 +40,7 @@ tools: Bash, Read, Grep, Glob, Write
 - [ ] 既存パターンの踏襲なら「既存パターン踏襲」の 1 行で済ませる
 - [ ] What + Why のみで PR の意義が伝わるか。How は「設計判断が必要だった点」だけ
 - [ ] 全体 200〜1200 字に収まっているか。
+- [ ] 本文の主張ごとに、根拠（差分の箇所か、渡された経緯）を挙げられるか。挙げられない主張は消す
 
 字数をコマンドで数える場合、`wc -m` はロケール依存で `LC_ALL=C` ではバイト数を返す。日本語では `LC_ALL=ja_JP.UTF-8 wc -m` か `python3 -c` で数える。
 
@@ -50,4 +51,4 @@ tools: Bash, Read, Grep, Glob, Write
 - 新規: `gh pr create --draft --base <base> --assignee komtaki --title "$(cat <タイトルのファイル>)" --body-file <本文のファイル>`
 - 更新: `gh pr edit <番号> --title "$(cat <タイトルのファイル>)" --body-file <本文のファイル>`
 
-PR の URL を報告して終わる。メインエージェントから検品の指摘が届いたら、本文のファイルを直して `gh pr edit` で反映し直す。
+PR の URL と、本文の主張ごとの根拠を報告して終わる。メインエージェントから検品の指摘が届いたら、本文のファイルを直して `gh pr edit` で反映し直す。
