@@ -36,7 +36,7 @@ block_unless_pr_writer() {
 
 PR_BODY_MAX_CHARS=1500
 
-body_file_char_count() {
+parse_pr_command() {
   printf '%s' "$INPUT" | python3 -c '
 import json, os, shlex, sys
 
@@ -54,15 +54,18 @@ path = None
 inline_body = False
 has_cd = False
 in_pr_command = False
+draft = False
 for i, token in enumerate(tokens):
     if set(token) <= set(";&|"):
         in_pr_command = False
     elif token == "cd" and (i == 0 or set(tokens[i - 1]) <= set(";&|")):
         has_cd = True
     elif i >= 2 and tokens[i - 2:i] == ["gh", "pr"] and token in ("create", "edit"):
-        in_pr_command = True
+        in_pr_command = token
     elif not in_pr_command:
         continue
+    elif in_pr_command == "create" and token in ("--draft", "--draft=true", "-d"):
+        draft = True
     elif token in ("--body-file", "-F") and i + 1 < len(tokens):
         path = tokens[i + 1]
     elif token.startswith("--body-file="):
@@ -72,29 +75,31 @@ for i, token in enumerate(tokens):
     elif token == "--body" or token.startswith("--body=") or (token.startswith("-b") and not token.startswith("--")):
         inline_body = True
 
-if inline_body or path == "-":
-    print("inline")
-    sys.exit(0)
-if not path:
-    sys.exit(0)
-path = os.path.expanduser(os.path.expandvars(path))
-if has_cd and not os.path.isabs(path):
-    print(f"relative_after_cd {path}")
-    sys.exit(0)
-path = os.path.join(data.get("cwd") or os.getcwd(), path)
-try:
-    with open(path, encoding="utf-8") as body:
-        print(f"count {len(body.read())}")
-except FileNotFoundError:
-    print(f"missing {path}")
-except (OSError, UnicodeDecodeError):
-    pass
+def body_result(path):
+    if inline_body or path == "-":
+        return "inline"
+    if not path:
+        return ""
+    path = os.path.expanduser(os.path.expandvars(path))
+    if has_cd and not os.path.isabs(path):
+        return f"relative_after_cd {path}"
+    path = os.path.join(data.get("cwd") or os.getcwd(), path)
+    try:
+        with open(path, encoding="utf-8") as body:
+            return f"count {len(body.read())}"
+    except FileNotFoundError:
+        return f"missing {path}"
+    except (OSError, UnicodeDecodeError):
+        return ""
+
+print(body_result(path))
+print("draft" if draft else "no_draft")
 '
 }
 
 block_if_body_too_long() {
   local result kind value
-  result=$(body_file_char_count || true)
+  result=$(printf '%s\n' "$PR_COMMAND" | sed -n 1p)
   kind="${result%% *}"
   value="${result#* }"
   if [ "$kind" = "unparsable" ]; then
@@ -123,7 +128,11 @@ if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+
     block "gh pr create の前に simplify スキルで差分をセルフレビューしてください（develop:ship）。"
   fi
   block_unless_pr_writer
+  PR_COMMAND=$(parse_pr_command || true)
   block_if_body_too_long
+  if ! printf '%s\n' "$PR_COMMAND" | grep -qx draft; then
+    block "PR は draft で作ってください（gh pr create --draft）。"
+  fi
   exit 0
 fi
 
@@ -132,6 +141,7 @@ if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+
   if printf '%s\n' "$PR_EDIT_ARGS" | grep -qE '(^|[[:space:]])((--title|--body|--body-file)([[:space:]=]|$)|-[tbF])'; then
     block_unless_pr_writer
     if printf '%s\n' "$PR_EDIT_ARGS" | grep -qE '(^|[[:space:]])((--body|--body-file)([[:space:]=]|$)|-[bF])'; then
+      PR_COMMAND=$(parse_pr_command || true)
       block_if_body_too_long
     fi
   fi

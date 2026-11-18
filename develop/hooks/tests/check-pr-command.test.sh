@@ -90,13 +90,13 @@ rm -f "$(marker_file_for "$session")"
 
 session=$(new_session)
 mark_invoked "$session" "simplify"
-out=$(run_hook "gh pr create --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
+out=$(run_hook "gh pr create --draft --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
 assert_pass "gh pr create from pr-writer with simplify invoked passes without ship" "$out"
 rm -f "$(marker_file_for "$session")"
 
 session=$(new_session)
 run_mark "simplify" "$session"
-out=$(run_hook "gh pr create --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
+out=$(run_hook "gh pr create --draft --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
 assert_pass "simplify recorded by mark-pr-skill-invoked unlocks gh pr create" "$out"
 rm -f "$(marker_file_for "$session")"
 
@@ -108,6 +108,46 @@ if [ -f "$(marker_file_for "$session")" ]; then
 else
   echo "PASS: mark-pr-skill-invoked does not record ship"
 fi
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_ready_session)
+out=$(run_hook "gh pr create --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
+assert_block_contains "gh pr create without --draft blocks" "$out" "draft"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_ready_session)
+out=$(run_hook "gh pr create -d --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
+assert_pass "gh pr create -d passes" "$out"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_ready_session)
+out=$(run_hook "gh pr create --draft=true --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
+assert_pass "gh pr create --draft=true passes" "$out"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_ready_session)
+out=$(run_hook "gh pr create --draft=false --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
+assert_block_contains "gh pr create --draft=false blocks" "$out" "draft"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_ready_session)
+out=$(run_hook "gh pr create --title x \\"$'\n'"  --draft --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
+assert_pass "--draft after a line continuation passes" "$out"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_ready_session)
+out=$(run_hook "gh pr create --title 'a | b' --draft --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
+assert_pass "--draft after a quoted pipe in the title passes" "$out"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_ready_session)
+out=$(run_hook "gh pr create --title 'use --draft flag' --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
+assert_block_contains "--draft inside the title does not count" "$out" "draft"
+rm -f "$(marker_file_for "$session")"
+
+session=$(new_ready_session)
+out=$(run_hook "gh pr create --title x --body-file $body_dir/ascii-1500.md && echo --draft" "$session" "develop:pr-writer")
+assert_block_contains "--draft in a chained command does not count" "$out" "draft"
 rm -f "$(marker_file_for "$session")"
 
 session=$(new_session)
@@ -178,7 +218,7 @@ assert_pass "short flags in commands chained after gh pr edit are not checked" "
 rm -f "$(marker_file_for "$session")"
 
 session=$(new_ready_session)
-out=$(run_hook "gh pr create --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
+out=$(run_hook "gh pr create --draft --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
 assert_pass "gh pr create --body-file with exactly 1500 chars passes" "$out"
 rm -f "$(marker_file_for "$session")"
 
@@ -188,7 +228,7 @@ assert_block_contains "gh pr create --body-file with 1501 chars blocks" "$out" "
 rm -f "$(marker_file_for "$session")"
 
 session=$(new_ready_session)
-out=$(run_hook "gh pr create --title x --body-file $body_dir/ja-1500.md" "$session" "develop:pr-writer")
+out=$(run_hook "gh pr create --draft --title x --body-file $body_dir/ja-1500.md" "$session" "develop:pr-writer")
 assert_pass "1500 Japanese chars are counted as chars, not bytes" "$out"
 rm -f "$(marker_file_for "$session")"
 
@@ -233,7 +273,7 @@ assert_block_contains "--body-file with \$TMPDIR and 1501 chars blocks" "$out" "
 rm -f "$(marker_file_for "$session")"
 
 session=$(new_ready_session)
-out=$(run_hook "gh pr create --title x --body-file \"\$TMPDIR/$body_dir_name/ascii-1500.md\"" "$session" "develop:pr-writer")
+out=$(run_hook "gh pr create --draft --title x --body-file \"\$TMPDIR/$body_dir_name/ascii-1500.md\"" "$session" "develop:pr-writer")
 assert_pass "--body-file with \$TMPDIR and 1500 chars passes" "$out"
 rm -f "$(marker_file_for "$session")"
 
@@ -253,7 +293,7 @@ assert_block_contains "--body-file - (stdin) blocks" "$out" "--body-file"
 rm -f "$(marker_file_for "$session")"
 
 session=$(new_ready_session)
-out=$(run_hook "gh pr create --title x --body-file $body_dir/ascii-1500.md"$'\n'"grep -F $body_dir/ascii-1501.md foo" "$session" "develop:pr-writer")
+out=$(run_hook "gh pr create --draft --title x --body-file $body_dir/ascii-1500.md"$'\n'"grep -F $body_dir/ascii-1501.md foo" "$session" "develop:pr-writer")
 assert_pass "-F on the next line is not counted as the body file" "$out"
 rm -f "$(marker_file_for "$session")"
 
@@ -273,7 +313,7 @@ assert_block_contains "relative --body-file after cd on a previous line blocks" 
 rm -f "$(marker_file_for "$session")"
 
 session=$(new_ready_session)
-out=$(run_hook "cd $body_dir && gh pr create --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
+out=$(run_hook "cd $body_dir && gh pr create --draft --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
 assert_pass "absolute --body-file after cd passes" "$out"
 rm -f "$(marker_file_for "$session")"
 
