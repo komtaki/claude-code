@@ -5,7 +5,7 @@ description: 依頼を実装して PR を作り、レビュー対応を終えて
 
 # ship: 依頼から PR マージ待ちまで
 
-作り手に依頼するときと成果物を受け取るときは、[inspection.md](inspection.md) に従う。ユーザーに聞くのは末尾の「止めて聞く場面」だけにし、それ以外は既定で決めて進め、決めたことを最後に報告する。作業先の `AGENTS.md`・`CLAUDE.md` が足す手順は該当する段に入れ、食い違えば作業先に従う。4 の lensdiff レビューは、どの作業先でも行う。
+作り手に依頼するときと成果物を受け取るときは、[inspection.md](inspection.md) に従う。ユーザーに聞くのは末尾の「止めて聞く場面」だけにし、それ以外は既定で決めて進め、決めたことを最後に報告する。作業先の `AGENTS.md`・`CLAUDE.md` が足す手順は該当する段に入れ、食い違えば作業先に従う。手順は差分の規模で省かない。省いてよいのは作業先が定めるときだけで、ほかで省きたいときは止めて聞く。門番 hook に止められたら、止められた段の手順を頭から回す（hook を通すことを目的にしない）。
 
 ## 1. 準備
 
@@ -22,13 +22,15 @@ description: 依頼を実装して PR を作り、レビュー対応を終えて
 
 サブエージェントにはタスクごとに、要件だけを渡して実装（テストを先に書く）→ 別のサブエージェントでレビュー → Critical・Important を修正、を回す。3 回で収まらなければ能力の高いモデルに引き継ぐ。最後に最も能力の高いモデルでブランチ全体をレビューし、まとめて直す。進み具合は scratchpad の台帳に残す。
 
+削除だけの変更（テスト以外のファイルに追加行がない差分）では、消したものが出ないことを確かめるテストを書かない。消したものを参照していた既存テストを直す。
+
 不具合を直すときは、まず再現させ、原因をログ・コード・データなどの一次情報で突き止めてから直す。完了と報告する前にテストやコマンドを実行し、その出力を根拠として示す。
 
 commit は `develop:commit` に従う。署名に失敗したら `git -c commit.gpgsign=false commit` で commit する。
 
 ## 3. simplify と AI レビュー
 
-`simplify` スキルで差分全体を 4 観点で見直し、意図した挙動を保つ指摘を採用する。続けて観点ごとにサブエージェントで AI レビューし、指摘を `kind: "finding"` の JSON で scratchpad に書かせる（`code` は correctness ほか、`docs` は整合性、`shared` は対象外の参照元を含める。2 の全体レビューを correctness とする）。`error` は直して commit し、`info`・`warn` は 4 で lensdiff に流す。
+`simplify` スキルで差分全体を 4 観点で見直し、意図した挙動を保つ指摘を採用する。続けて観点ごとにサブエージェントで AI レビューし、指摘を `kind: "finding"` の JSON で scratchpad に書かせる（`code` は correctness ほか、`docs` は整合性、`shared` は対象外の参照元を含める。2 の全体レビューを correctness とする）。`error` は直して commit し、`info`・`warn` は 4 で lensdiff に流す。simplify で採用しなかった指摘も、メインエージェントが `warn` の finding として findings JSON に書き起こし、4 で lensdiff に流して人が決める。
 
 ## 4. lensdiff レビュー
 
@@ -62,3 +64,4 @@ command -v lensdiff >/dev/null || npm install -g https://github.com/komtaki/lens
 | `shared` で対象外の挙動が変わる | 他の利用者に影響する |
 | 人間のレビュアーへの返信 | 返信案を見せ、本人が返す |
 | lensdiff の承認 | 人の判断そのもの |
+| 手順を省きたい（作業先の定めがない） | 省いた段の検品が抜ける |
