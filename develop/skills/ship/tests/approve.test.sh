@@ -9,7 +9,6 @@ trap 'rm -rf "$root"' EXIT
 root=$(cd "$root" && pwd -P)
 export TMPDIR="$root/tmp"
 repo="$root/work/foo"
-marker_dir="$TMPDIR/claude-lensdiff-approved"
 
 failures=0
 
@@ -35,25 +34,24 @@ check() {
 }
 
 expected_marker() {
-  printf '%s/%s' "$marker_dir" "$(printf '%s' "$repo" | shasum | cut -c1-12)"
+  printf '%s/.git/claude-lensdiff-approved' "$repo"
 }
 
 marker_has_head() {
   grep -qx "$(git -C "$repo" rev-parse HEAD) main" "$(expected_marker)"
 }
 
-marker_is_only_file() {
-  [ "$(ls -A "$marker_dir")" = "$(basename "$(expected_marker)")" ]
+marker_line_count_is() {
+  [ "$(wc -l <"$(expected_marker)" | tr -d ' ')" = "$1" ]
 }
 
 no_marker() {
-  [ ! -e "$marker_dir" ] || [ -z "$(ls -A "$marker_dir")" ]
+  [ ! -e "$(expected_marker)" ]
 }
 
 setup
 bash "$approve" "$repo" main
 check "absolute_repo_writes_head_and_base" marker_has_head
-check "marker_name_is_sha1_prefix_of_physical_toplevel" marker_is_only_file
 
 setup
 (cd "$repo" && bash "$approve" . main)
@@ -72,8 +70,13 @@ setup
 bash "$approve" "$repo" main
 git -C "$repo" commit -q --allow-empty -m next
 bash "$approve" "$repo" main
-check "second_approval_keeps_previous_lines" bash -c "[ \"\$(wc -l <'$(expected_marker)' | tr -d ' ')\" = 2 ]"
+check "second_approval_keeps_previous_lines" marker_line_count_is 2
 check "second_approval_records_new_head" marker_has_head
+
+setup
+TMPDIR="$root/tmp-a" bash "$approve" "$repo" main
+TMPDIR="$root/tmp-b" bash "$approve" "$repo" main
+check "different_tmpdir_appends_to_same_marker" marker_line_count_is 2
 
 setup
 check "missing_repo_exits_non_zero" bash -c "! bash '$approve' '$root/work/missing' main 2>/dev/null"
