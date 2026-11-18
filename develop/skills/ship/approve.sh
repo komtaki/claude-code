@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # usage: approve.sh <repo-dir> <base>
-# appends "<HEAD sha> <base>" to ${TMPDIR:-/tmp}/claude-lensdiff-approved/<first 12 hex of sha1(physical toplevel)>
+# appends "<HEAD sha> <base>" to $(git rev-parse --absolute-git-dir)/claude-lensdiff-approved
 # 門番 hook が同じ式で marker を探すため、式を変えるときは hook 側も合わせる
 set -euo pipefail
 
@@ -14,7 +14,6 @@ if [ -n "$prefix" ]; then
   exit 1
 fi
 sha=$(git -C "$repo" rev-parse HEAD)
-marker="${TMPDIR:-/tmp}/claude-lensdiff-approved/$(printf '%s' "$repo" | shasum | cut -c1-12)"
+marker="$(git -C "$repo" rev-parse --absolute-git-dir)/claude-lensdiff-approved"
 
-mkdir -p "$(dirname "$marker")"
 printf '%s %s\n' "$sha" "$base" >> "$marker"
