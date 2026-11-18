@@ -32,7 +32,7 @@
         ]
       },
       {
-        "matcher": "Agent|Task|Bash",
+        "matcher": "Agent|Task",
         "hooks": [
           {
             "type": "command",
