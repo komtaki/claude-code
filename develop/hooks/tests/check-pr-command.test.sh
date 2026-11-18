@@ -110,45 +110,31 @@ else
 fi
 rm -f "$(marker_file_for "$session")"
 
-session=$(new_ready_session)
-out=$(run_hook "gh pr create --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
-assert_block_contains "gh pr create without --draft blocks" "$out" "draft"
-rm -f "$(marker_file_for "$session")"
+draft_passes=(
+  "gh pr create -d passes|gh pr create -d --title x --body-file $body_dir/ascii-1500.md"
+  "gh pr create --draft=true passes|gh pr create --draft=true --title x --body-file $body_dir/ascii-1500.md"
+  "--draft after a line continuation passes|gh pr create --title x \\"$'\n'"  --draft --body-file $body_dir/ascii-1500.md"
+  "--draft after a quoted pipe in the title passes|gh pr create --title 'a | b' --draft --body-file $body_dir/ascii-1500.md"
+)
+for case in "${draft_passes[@]}"; do
+  session=$(new_ready_session)
+  out=$(run_hook "${case#*|}" "$session" "develop:pr-writer")
+  assert_pass "${case%%|*}" "$out"
+  rm -f "$(marker_file_for "$session")"
+done
 
-session=$(new_ready_session)
-out=$(run_hook "gh pr create -d --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
-assert_pass "gh pr create -d passes" "$out"
-rm -f "$(marker_file_for "$session")"
-
-session=$(new_ready_session)
-out=$(run_hook "gh pr create --draft=true --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
-assert_pass "gh pr create --draft=true passes" "$out"
-rm -f "$(marker_file_for "$session")"
-
-session=$(new_ready_session)
-out=$(run_hook "gh pr create --draft=false --title x --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
-assert_block_contains "gh pr create --draft=false blocks" "$out" "draft"
-rm -f "$(marker_file_for "$session")"
-
-session=$(new_ready_session)
-out=$(run_hook "gh pr create --title x \\"$'\n'"  --draft --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
-assert_pass "--draft after a line continuation passes" "$out"
-rm -f "$(marker_file_for "$session")"
-
-session=$(new_ready_session)
-out=$(run_hook "gh pr create --title 'a | b' --draft --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
-assert_pass "--draft after a quoted pipe in the title passes" "$out"
-rm -f "$(marker_file_for "$session")"
-
-session=$(new_ready_session)
-out=$(run_hook "gh pr create --title 'use --draft flag' --body-file $body_dir/ascii-1500.md" "$session" "develop:pr-writer")
-assert_block_contains "--draft inside the title does not count" "$out" "draft"
-rm -f "$(marker_file_for "$session")"
-
-session=$(new_ready_session)
-out=$(run_hook "gh pr create --title x --body-file $body_dir/ascii-1500.md && echo --draft" "$session" "develop:pr-writer")
-assert_block_contains "--draft in a chained command does not count" "$out" "draft"
-rm -f "$(marker_file_for "$session")"
+draft_blocks=(
+  "gh pr create without --draft blocks|gh pr create --title x --body-file $body_dir/ascii-1500.md"
+  "gh pr create --draft=false blocks|gh pr create --draft=false --title x --body-file $body_dir/ascii-1500.md"
+  "--draft inside the title does not count|gh pr create --title 'use --draft flag' --body-file $body_dir/ascii-1500.md"
+  "--draft in a chained command does not count|gh pr create --title x --body-file $body_dir/ascii-1500.md && echo --draft"
+)
+for case in "${draft_blocks[@]}"; do
+  session=$(new_ready_session)
+  out=$(run_hook "${case#*|}" "$session" "develop:pr-writer")
+  assert_block_contains "${case%%|*}" "$out" "draft"
+  rm -f "$(marker_file_for "$session")"
+done
 
 session=$(new_session)
 out=$(run_hook 'gh pr edit 1 --title "x"' "$session" "develop:pr-writer")

@@ -37,9 +37,9 @@ new_transcript() {
 }
 
 add_tool_use() {
-  local transcript="$1" name="$2" input="$3" cwd="${4:-$work_dir}" sidechain="${5:-false}"
+  local transcript="$1" name="$2" input="$3" cwd="${4-$work_dir}" sidechain="${5:-false}"
   jq -cn --arg name "$name" --argjson input "$input" --arg cwd "$cwd" --argjson side "$sidechain" \
-    '{type:"assistant", isSidechain:$side, cwd:$cwd, message:{role:"assistant", content:[{type:"tool_use", id:"toolu_x", name:$name, input:$input}]}}' >> "$transcript"
+    '{type:"assistant", isSidechain:$side} + (if $cwd == "" then {} else {cwd:$cwd} end) + {message:{role:"assistant", content:[{type:"tool_use", id:"toolu_x", name:$name, input:$input}]}}' >> "$transcript"
 }
 
 add_skill() {
@@ -65,12 +65,7 @@ add_read() {
 }
 
 add_bash_read() {
-  local transcript="$1" cmd="$2" cwd="${3:-}"
-  if [ -n "$cwd" ]; then
-    add_tool_use "$transcript" Bash "$(jq -cn --arg c "$cmd" '{command:$c}')" "$cwd"
-  else
-    jq -cn --arg c "$cmd" '{type:"assistant", isSidechain:false, message:{role:"assistant", content:[{type:"tool_use", id:"toolu_x", name:"Bash", input:{command:$c}}]}}' >> "$transcript"
-  fi
+  add_tool_use "$1" Bash "$(jq -cn --arg c "$2" '{command:$c}')" "${3:-}"
 }
 
 add_compact() {

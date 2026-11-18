@@ -2,16 +2,16 @@
 set -euo pipefail
 
 INPUT=$(cat)
-AGENT_ID=$(printf '%s' "$INPUT" | jq -r '.agent_id // ""')
-TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""')
-TRANSCRIPT_PATH=$(printf '%s' "$INPUT" | jq -r '.transcript_path // ""')
+FIELDS=$(printf '%s' "$INPUT" | jq -j '[.agent_id // "", .tool_name // "", .transcript_path // "", .tool_input.command? // ""] | map(tostring) | join("\u001f")')
+# タブは IFS の空白扱いで連続した空値が詰まり、@tsv は \ を書き換えるため、空白でない区切りで分ける
+IFS=$'\x1f' read -r -d '' AGENT_ID TOOL_NAME TRANSCRIPT_PATH COMMAND < <(printf '%s' "$FIELDS") || true
 
 block() {
   printf '%s' "$1" | jq -Rs '{decision: "block", reason: .}'
   exit 0
 }
 
-# 出力は 1 行目が状態（missing / denied / unreadable / ok）、2 行目以降が ship・simplify・inspection・rule のうち満たしたもの
+# 出力は 1 行で、先頭が状態（missing / denied / unreadable / ok）、続けて ship・simplify・inspection・rule のうち満たしたものを空白区切りで並べる
 scan_transcript() {
   python3 -c '
 import json, os, re, shlex, sys
@@ -98,6 +98,14 @@ invoked = set()
 reads = set()
 structured = False
 raw_ship = False
+
+def record_skill(name):
+    global structured
+    structured = True
+    kind = skill_kind(name)
+    if kind:
+        invoked.add(kind)
+
 try:
     with open(transcript, "rb") as lines:
         for line in lines:
@@ -129,20 +137,14 @@ try:
                 texts = [content] if isinstance(content, str) else [part.get("text") or "" for part in content or [] if isinstance(part, dict) and part.get("type") == "text"]
                 for text in texts:
                     for name in COMMAND_NAME.findall(text):
-                        structured = True
-                        kind = skill_kind(name)
-                        if kind:
-                            invoked.add(kind)
+                        record_skill(name)
             elif entry.get("type") == "assistant" and isinstance(content, list):
                 for part in content:
                     if not isinstance(part, dict) or part.get("type") != "tool_use" or not isinstance(part.get("input"), dict):
                         continue
                     tool, tool_input = part.get("name"), part["input"]
                     if tool == "Skill" and isinstance(tool_input.get("skill"), str):
-                        structured = True
-                        kind = skill_kind(tool_input["skill"])
-                        if kind:
-                            invoked.add(kind)
+                        record_skill(tool_input["skill"])
                     elif tool == "Read" and isinstance(tool_input.get("file_path"), str):
                         reads |= matches(resolve(tool_input["file_path"], entry.get("cwd")))
                     elif tool == "Bash" and isinstance(tool_input.get("command"), str):
@@ -151,32 +153,38 @@ except OSError:
     print("denied")
     sys.exit(0)
 
-print("unreadable" if raw_ship and not structured else "ok")
-for flag in sorted(invoked | reads):
-    print(flag)
+print(" ".join(["unreadable" if raw_ship and not structured else "ok"] + sorted(invoked | reads)))
 ' "$TRANSCRIPT_PATH" "${1:-}"
 }
 
-transcript_state() {
-  printf '%s\n' "$SCAN" | sed -n 1p
-}
-
 transcript_has() {
-  printf '%s\n' "$SCAN" | sed 1d | grep -qx "$1"
+  [[ " $TRANSCRIPT_FLAGS " == *" $1 "* ]]
 }
 
 DENIED_REASON="transcript を開けない・読めないため、develop:ship の手順を守っているかを判定できません。hook 入力の transcript_path（${TRANSCRIPT_PATH}）の権限を確かめ、止めてユーザーに伝えてください。"
 UNREADABLE_REASON="transcript の形式が読めないため、develop:ship の手順を守っているかを判定できません。hook 入力の transcript_path（${TRANSCRIPT_PATH}）の形式が変わった可能性があります。止めてユーザーに伝え、check-ship-order.sh を直してもらってください。"
 
-if [ "$TOOL_NAME" = "Agent" ] || [ "$TOOL_NAME" = "Task" ]; then
-  [ -z "$AGENT_ID" ] || exit 0
-  SCAN=$(scan_transcript)
-  case "$(transcript_state)" in
+exit_unless_ship_session() {
+  [ -f "$TRANSCRIPT_PATH" ] || exit 0
+  [ -r "$TRANSCRIPT_PATH" ] || block "$DENIED_REASON"
+  # ship の起動は Skill の値か <command-name> の末尾が ship になるため、どちらの生文字列もなければ python を起動せずに通す
+  local status=0
+  grep -qE 'ship("|</command-name>)' "$TRANSCRIPT_PATH" || status=$?
+  [ "$status" -ne 1 ] || exit 0
+  local scan state
+  scan=$(scan_transcript "${1:-}")
+  read -r state TRANSCRIPT_FLAGS <<<"$scan"
+  case "$state" in
     missing) exit 0 ;;
     denied) block "$DENIED_REASON" ;;
     unreadable) block "$UNREADABLE_REASON" ;;
   esac
   transcript_has ship || exit 0
+}
+
+if [ "$TOOL_NAME" = "Agent" ] || [ "$TOOL_NAME" = "Task" ]; then
+  [ -z "$AGENT_ID" ] || exit 0
+  exit_unless_ship_session
   if ! transcript_has inspection; then
     block "サブエージェントに依頼する前に、develop:ship の inspection.md をメインエージェントが開いてください（Read でも、Bash の cat などでも構いません）。依頼が inspection.md の節（A〜D）に当たるなら、その節の「作り手が返す根拠」を完了条件として依頼文に入れ、「メインエージェントが見る観点」をタスクリストに写してから依頼します。/compact の後は会話から中身が消えるため、読み直してください。"
   fi
@@ -184,6 +192,8 @@ if [ "$TOOL_NAME" = "Agent" ] || [ "$TOOL_NAME" = "Task" ]; then
 fi
 
 [ "$TOOL_NAME" = "Bash" ] || exit 0
+# lensdiff の名前を引用符・バックスラッシュで分けた起動は python の字句解析でしか見つからないため、それらを含むときは前段で落とさない
+[[ $COMMAND == *lensdiff* || $COMMAND == *[\'\"\\]* ]] || exit 0
 
 lensdiff_launch_dir() {
   printf '%s' "$INPUT" | python3 -c '
@@ -222,7 +232,6 @@ WRAPPER_OPTIONS_WITH_VALUE = {
     "env": {"-u", "--unset", "-C", "--chdir", "-S", "--split-string"},
     "nohup": set(),
     "exec": {"-a"},
-    "time": set(),
     "nice": {"-n", "--adjustment"},
     "timeout": {"-k", "--kill-after", "-s", "--signal"},
     "command": set(),
@@ -307,13 +316,7 @@ if [ -n "$launch_dir" ]; then
   fi
 fi
 
-SCAN=$(scan_transcript "$rule_file")
-case "$(transcript_state)" in
-  missing) exit 0 ;;
-  denied) block "$DENIED_REASON" ;;
-  unreadable) block "$UNREADABLE_REASON" ;;
-esac
-transcript_has ship || exit 0
+exit_unless_ship_session "$rule_file"
 
 if [ "$LAUNCH" = "unparsable" ]; then
   block "コマンドを解析できないため、lensdiff の起動かどうかを判定できません。引用符を閉じて実行し直してください。"

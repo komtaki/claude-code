@@ -47,24 +47,24 @@ lexer.whitespace_split = True
 try:
     tokens = list(lexer)
 except ValueError:
-    print("unparsable")
+    print("body=unparsable")
     sys.exit(0)
 
 path = None
 inline_body = False
 has_cd = False
-in_pr_command = False
+pr_subcommand = None
 draft = False
 for i, token in enumerate(tokens):
     if set(token) <= set(";&|"):
-        in_pr_command = False
+        pr_subcommand = None
     elif token == "cd" and (i == 0 or set(tokens[i - 1]) <= set(";&|")):
         has_cd = True
     elif i >= 2 and tokens[i - 2:i] == ["gh", "pr"] and token in ("create", "edit"):
-        in_pr_command = token
-    elif not in_pr_command:
+        pr_subcommand = token
+    elif pr_subcommand is None:
         continue
-    elif in_pr_command == "create" and token in ("--draft", "--draft=true", "-d"):
+    elif pr_subcommand == "create" and token in ("--draft", "--draft=true", "-d"):
         draft = True
     elif token in ("--body-file", "-F") and i + 1 < len(tokens):
         path = tokens[i + 1]
@@ -92,14 +92,15 @@ def body_result(path):
     except (OSError, UnicodeDecodeError):
         return ""
 
-print(body_result(path))
-print("draft" if draft else "no_draft")
+print(f"body={body_result(path)}")
+if draft:
+    print("draft=1")
 '
 }
 
 block_if_body_too_long() {
   local result kind value
-  result=$(printf '%s\n' "$PR_COMMAND" | sed -n 1p)
+  result=$(printf '%s\n' "$1" | sed -n 's/^body=//p')
   kind="${result%% *}"
   value="${result#* }"
   if [ "$kind" = "unparsable" ]; then
@@ -129,8 +130,8 @@ if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+
   fi
   block_unless_pr_writer
   PR_COMMAND=$(parse_pr_command || true)
-  block_if_body_too_long
-  if ! printf '%s\n' "$PR_COMMAND" | grep -qx draft; then
+  block_if_body_too_long "$PR_COMMAND"
+  if ! printf '%s\n' "$PR_COMMAND" | grep -qx draft=1; then
     block "PR は draft で作ってください（gh pr create --draft）。"
   fi
   exit 0
@@ -141,8 +142,7 @@ if printf '%s\n' "$COMMAND" | grep -qE "${CMD_START}gh[[:space:]]+pr[[:space:]]+
   if printf '%s\n' "$PR_EDIT_ARGS" | grep -qE '(^|[[:space:]])((--title|--body|--body-file)([[:space:]=]|$)|-[tbF])'; then
     block_unless_pr_writer
     if printf '%s\n' "$PR_EDIT_ARGS" | grep -qE '(^|[[:space:]])((--body|--body-file)([[:space:]=]|$)|-[bF])'; then
-      PR_COMMAND=$(parse_pr_command || true)
-      block_if_body_too_long
+      block_if_body_too_long "$(parse_pr_command || true)"
     fi
   fi
   exit 0
