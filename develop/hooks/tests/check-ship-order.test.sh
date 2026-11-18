@@ -183,6 +183,30 @@ out=$(run_bash "git status" "$t" "$bare_repo")
 assert_pass "unreadable transcript does not block other Bash commands" "$out"
 
 t=$(new_transcript)
+printf '%s\n' '{"type":"user","payload":"<command-name>/develop:ship</command-name>"}' >> "$t"
+out=$(run_agent "Agent" "$t")
+assert_block_contains "unreadable user line with a ship command blocks Agent" "$out" "transcript の形式が読めない"
+
+t=$(new_transcript)
+jq -cn '{type:"user", isSidechain:false, message:{role:"user", content:[{type:"tool_result", tool_use_id:"toolu_x", content:"<command-name>/develop:ship</command-name>"}]}}' >> "$t"
+jq -cn '{type:"assistant", isSidechain:false, message:{role:"assistant", content:[{type:"text", text:"<command-name>/develop:ship</command-name>"}]}}' >> "$t"
+out=$(run_agent "Agent" "$t")
+assert_pass "ship command text in a tool_result or assistant text does not block Agent" "$out"
+out=$(run_bash "lensdiff ." "$t" "$agents_repo")
+assert_pass "ship command text in a tool_result or assistant text does not block lensdiff" "$out"
+
+t=$(new_transcript)
+add_skill "$t" "develop:ship"
+chmod 000 "$t"
+out=$(run_agent "Agent" "$t")
+assert_block_contains "transcript that cannot be opened blocks Agent" "$out" "transcript を開けない"
+out=$(run_bash "lensdiff ." "$t" "$bare_repo")
+assert_block_contains "transcript that cannot be opened blocks lensdiff" "$out" "transcript を開けない"
+out=$(run_bash "git status" "$t" "$bare_repo")
+assert_pass "transcript that cannot be opened does not block other Bash commands" "$out"
+chmod 600 "$t"
+
+t=$(new_transcript)
 add_skill "$t" "develop:ship"
 out=$(run_agent "Agent" "$t")
 assert_block_contains "Agent before reading inspection.md blocks" "$out" "inspection.md"
@@ -239,6 +263,9 @@ add_skill "$t" "develop:ship"
 add_bash_read "$t" "cat \$SK/inspection.md" "$work_dir"
 out=$(run_agent "Agent" "$t")
 assert_block_contains "Bash read through an unresolved variable does not count" "$out" "inspection.md"
+add_bash_read "$t" "ls $inspection" "$work_dir"
+out=$(run_agent "Agent" "$t")
+assert_block_contains "Bash ls of inspection.md does not count" "$out" "inspection.md"
 add_bash_read "$t" "cd \$HOME_UNKNOWN; cat skills/ship/inspection.md" "$work_dir/plugin"
 out=$(run_agent "Agent" "$t")
 assert_block_contains "Bash read after an unresolved cd does not count" "$out" "inspection.md"
@@ -318,7 +345,10 @@ out=$(run_bash "lensdiff --merge-base HEAD origin/main" "$t" "$agents_repo")
 assert_block_contains "lensdiff before reading AGENTS.md blocks" "$out" "AGENTS.md"
 assert_block_contains "rule block accepts Read" "$out" "Read"
 assert_block_contains "rule block accepts Bash" "$out" "Bash"
-assert_block_contains "rule block sends back to the inspection of step 2" "$out" "inspection.md A の規約との照合"
+assert_block_contains "rule block sends back to the inspection of step 2" "$out" "「2. 実装」の検品"
+assert_block_contains "rule block points to inspection.md A and B" "$out" "inspection.md の A・B"
+assert_block_contains "rule block restarts from step 3 after fixing the diff" "$out" "3 からやり直して"
+assert_reason_lacks "rule block does not skip ahead to step 4" "$out" "4 に進み"
 assert_block_contains "rule block asks to read it again after compact" "$out" "/compact"
 assert_reason_lacks "rule block does not mention simplify once invoked" "$out" "3. simplify と AI レビュー"
 out=$(run_bash "lensdiff --merge-base HEAD origin/main" "$t" "$agents_repo/sub")
@@ -333,6 +363,11 @@ assert_block_contains "relative cd target is resolved from cwd" "$out" "AGENTS.m
 add_bash_read "$t" "grep -n foo $agents_repo/sub/../AGENTS.md.bak" "$work_dir"
 out=$(run_bash "lensdiff ." "$t" "$agents_repo")
 assert_block_contains "a similar path in a Bash command does not count" "$out" "AGENTS.md"
+for cmd in "ls AGENTS.md" "test -f AGENTS.md && echo ok" "cat README.md; ls -l AGENTS.md" "echo AGENTS.md | wc -l"; do
+  add_bash_read "$t" "$cmd" "$agents_repo"
+  out=$(run_bash "lensdiff ." "$t" "$agents_repo")
+  assert_block_contains "[$cmd] is not a read of AGENTS.md" "$out" "AGENTS.md"
+done
 add_read "$t" "$work_dir/agents-link/AGENTS.md"
 out=$(run_bash "lensdiff --merge-base HEAD origin/main" "$t" "$agents_repo")
 assert_pass "AGENTS.md read through a symlink counts" "$out"
@@ -352,6 +387,14 @@ add_bash_read "$t" "cat \"$space_repo/AGENTS.md\"" "$work_dir"
 add_skill "$t" "simplify"
 out=$(run_bash "lensdiff ." "$t" "$space_repo")
 assert_pass "quoted Bash read path with a space counts" "$out"
+
+for cmd in "ls -la && cat AGENTS.md" "git status; rg -n ship AGENTS.md" "cat < AGENTS.md" "sed -n 1,20p AGENTS.md | nl"; do
+  t=$(new_transcript)
+  add_skill "$t" "develop:ship" "simplify"
+  add_bash_read "$t" "$cmd" "$agents_repo"
+  out=$(run_bash "lensdiff ." "$t" "$agents_repo")
+  assert_pass "[$cmd] is a read of AGENTS.md" "$out"
+done
 
 t=$(new_transcript)
 add_skill "$t" "develop:ship"
