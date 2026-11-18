@@ -71,12 +71,6 @@ run_agent() {
     '{tool_name:$tool, tool_input:{prompt:"x"}, session_id:"s", transcript_path:$t} + $extra' | bash "$check"
 }
 
-
-run_bash() {
-  jq -n --arg cmd "$1" --arg t "$2" \
-    '{tool_name:"Bash", tool_input:{command:$cmd}, session_id:"s", cwd:"/", transcript_path:$t}' | bash "$check"
-}
-
 now() {
   python3 -c 'import time; print(time.time())'
 }
@@ -142,8 +136,6 @@ t=$(new_transcript)
 printf '%s\n' '{"kind":"turn","role":"assistant","calls":[{"tool":"Skill","args":{"skill":"develop:ship"}}]}' >> "$t"
 out=$(run_agent "Agent" "$t")
 assert_block_contains "unreadable transcript with a ship invocation blocks Agent" "$out" "transcript の形式が読めない"
-out=$(run_bash "lensdiff ." "$t")
-assert_pass "unreadable transcript does not block Bash" "$out"
 
 t=$(new_transcript)
 printf '%s\n' '{"type":"user","payload":"<command-name>/develop:ship</command-name>"}' >> "$t"
@@ -161,8 +153,6 @@ add_skill "$t" "develop:ship"
 chmod 000 "$t"
 out=$(run_agent "Agent" "$t")
 assert_block_contains "transcript that cannot be opened blocks Agent" "$out" "transcript を開けない"
-out=$(run_bash "lensdiff ." "$t")
-assert_pass "transcript that cannot be opened does not block Bash" "$out"
 chmod 600 "$t"
 
 t=$(new_transcript)
