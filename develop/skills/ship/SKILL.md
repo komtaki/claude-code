@@ -17,9 +17,7 @@ description: 依頼を実装して PR を作り、レビュー対応を終えて
 | 責任を持つ | 要件がユーザーの意図と合っていること。受け入れた成果物 | 成果物が作業先の規約に合っていること。その根拠を返すこと |
 | 確かめる | developer の視野の外（依頼の意図・タスク間の整合・差分の外への影響）。規約との照合は、受け入れの責任として developer の報告や依頼文に頼らず独立に行う | 自分の差分が規約とテストを満たすか |
 
-manager が作り方まで指示すると、developer は規約より指示を優先し、manager も指示どおりかしか見なくなり、誰も規約で判断しなくなる。
-
-- 依頼文には目的・要件・範囲・完了条件だけを書き、作り方は書かない。気になる点は、答えではなく、developer が規約で判断する問いとして渡す。
+- 依頼文には目的・要件・範囲・完了条件だけを書く。気になる点は、答えではなく、developer が規約で判断する問いとして渡す。
 - 受け取ったら、developer の報告に根拠が揃っているかを見る。足りなければ自分で補わずに差し戻す。
 - 段ごとの受け入れの観点ごとに、見つけたこと（なければ何を確かめたか）を台帳に残す。developer が回したテストやゲートは回し直さない。
 
@@ -85,7 +83,7 @@ command -v lensdiff >/dev/null || npm install -g https://github.com/komtaki/lens
 1. push し、`develop:pr-writer` にブランチ・base・差分から読めない経緯（未マージの依存、既定で決めたこと）を渡して、draft PR を作らせる。
 2. `gh pr view` で本文を検品し、直す点は同じ pr-writer に `SendMessage` で伝える。少量でも自分では直さない。書き手と検品者が分かれないと検品にならないため（`check-pr-command.sh` が止める）。
 3. CI は `ccd_pr` があれば bind して auto-fix に任せる。なければ `gh pr checks <番号> --watch --fail-fast` をバックグラウンドで待ち、失敗したら `develop:developer` に直させる。
-4. bot は指摘を残したまま check を通すので、`develop:pr-review-fix` で未 resolve スレッドに対応する（push 直後に空なら約 5 分後に 1 回取り直す）。
+4. CI完了後 bot は指摘を残したまま check を通すので、`develop:pr-review-fix` で未 resolve スレッドに対応する（push 直後に空なら約 5 分後に 1 回取り直す）。
 5. 差分が変わったら、`gh pr view --json body` から差分で読めない事実を拾い、PR 番号と一緒に pr-writer に渡して書き直させる。
 6. CI の修正（auto-fix を含む）と bot の指摘への対応は、次の観点で受け入れる。
    - **同じ種類の問題**: 指摘された箇所以外にも、同じ種類の問題がないか。
