@@ -3,6 +3,7 @@
 このリポジトリのスキル（`develop/skills/` など）は、`anthropic-skills:skill-creator` スキルで作る・変える。
 テストプロンプトを書き、新旧の版を並べて走らせ、結果をビューアで見せ、ユーザーのフィードバックで直してから PR にする。
 使わないと、冗長さや「やらないこと」の書き方といった文言の修正が、レビューコメントのたびに行き来していたため。
+変えたら、`develop/` で `claude plugin eval . --ablation none --scaffold --runs 1 --allow-tools Bash Write Edit` を回し、`develop/evals/` の回帰ケースが通ることを確かめる。
 
 ## 観測した失敗を防ぐ変更をするとき
 
