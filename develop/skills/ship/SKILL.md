@@ -9,7 +9,7 @@ description: 依頼を実装して PR を作り、レビュー対応を終えて
 
 ## 責任の分担
 
-メインエージェントは PJM、サブエージェントは作り手として、責任を次のように分ける。作り手の作法は agent 定義（`develop:implementer` など）が持つ。
+メインエージェントは PJM、サブエージェントは作り手として、責任を次のように分ける。作り手の作法は agent 定義（`develop:developer` など）が持つ。
 
 | | PJM（メインエージェント） | 作り手（サブエージェント） |
 | --- | --- | --- |
@@ -33,10 +33,10 @@ PJM が作り方まで指示すると、作り手は規約より指示を優先�
 差分の種類は `bash <skill-dir>/classify-diff.sh <repo-dir> <base> [session_id]` で判定する（`<skill-dir>` はこのスキルのベースディレクトリ）。実装前は依頼から見込む。
 
 - `docs`（変更が `*.md` か `docs/` 配下だけ）: メインエージェントが編集する。
-- `code`: `develop:implementer` に任せる。
-- `shared`（共通関数・public API・既定値を変える）: `develop:implementer` に任せる。実装前に参照元を grep で全数挙げ、依頼の対象外の挙動は opt-in で保つ。対象外の挙動が変わるなら一覧を示して合意を取る。
+- `code`: `develop:developer` に任せる。
+- `shared`（共通関数・public API・既定値を変える）: `develop:developer` に任せる。実装前に参照元を grep で全数挙げ、依頼の対象外の挙動は opt-in で保つ。対象外の挙動が変わるなら一覧を示して合意を取る。
 
-タスクごとに、`develop:implementer` に実装させる → 別のサブエージェントでレビュー → Critical・Important を修正、を回す。3 回で収まらなければ能力の高いモデルに引き継ぐ。最後に最も能力の高いモデルでブランチ全体をレビューし、まとめて直す。進み具合と、どの作り手が何を作ったかは scratchpad の台帳に残す。
+タスクごとに、`develop:developer` に実装させる → 別のサブエージェントでレビュー → Critical・Important を修正、を回す。3 回で収まらなければ能力の高いモデルに引き継ぐ。最後に最も能力の高いモデルでブランチ全体をレビューし、まとめて直す。進み具合と、どの作り手が何を作ったかは scratchpad の台帳に残す。
 
 commit は `develop:commit` に従う。署名に失敗したら `git -c commit.gpgsign=false commit` で commit する。
 
@@ -83,7 +83,7 @@ command -v lensdiff >/dev/null || npm install -g https://github.com/komtaki/lens
 
 1. push し、`develop:pr-writer` にブランチ・base・差分から読めない経緯（未マージの依存、既定で決めたこと）を渡して、draft PR を作らせる。
 2. `gh pr view` で本文を検品し、直す点は同じ pr-writer に `SendMessage` で伝える。少量でも自分では直さない。書き手と検品者が分かれないと検品にならないため（`check-pr-command.sh` が止める）。
-3. CI は `ccd_pr` があれば bind して auto-fix に任せる。なければ `develop:implementer` に `gh pr checks <番号> --watch --fail-fast` で待たせ、失敗を直させる。
+3. CI は `ccd_pr` があれば bind して auto-fix に任せる。なければ `develop:developer` に `gh pr checks <番号> --watch --fail-fast` で待たせ、失敗を直させる。
 4. bot は指摘を残したまま check を通すので、`develop:pr-review-fix` で未 resolve スレッドに対応する（push 直後に空なら約 5 分後に 1 回取り直す）。
 5. 差分が変わったら、`gh pr view --json body` から差分で読めない事実を拾い、PR 番号と一緒に pr-writer に渡して書き直させる。
 6. CI の修正（auto-fix を含む）と bot の指摘への対応は、次の観点で受け入れる。

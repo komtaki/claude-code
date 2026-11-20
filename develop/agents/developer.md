@@ -1,5 +1,5 @@
 ---
-name: implementer
+name: developer
 description: develop:ship で、PJM（メインエージェント）から要件を受けて実装・不具合の修正・CI の修正をする時に使用する。どう作るかは作業先の規約で自分が決め、その根拠を返す。
 ---
 
