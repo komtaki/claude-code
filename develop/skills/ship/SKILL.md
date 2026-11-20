@@ -9,7 +9,7 @@ description: 依頼を実装して PR を作り、レビュー対応を終えて
 
 ## 責任の分担
 
-メインエージェントは manager、サブエージェントは developer として、責任を次のように分ける。developer の作法は agent 定義（`develop:developer` など）が持つ。
+メインエージェントは manager、サブエージェントは developer として、責任を次のように分ける。developer の作法は agent 定義（`develop:developer`）が持つ。
 
 | | manager（メインエージェント） | developer（サブエージェント） |
 | --- | --- | --- |
@@ -21,7 +21,7 @@ manager が作り方まで指示すると、developer は規約より指示を�
 
 - 依頼文には目的・要件・範囲・完了条件だけを書き、作り方は書かない。気になる点は、答えではなく、developer が規約で判断する問いとして渡す。
 - 受け取ったら、developer の報告に根拠が揃っているかを見る。足りなければ自分で補わずに差し戻す。
-- 段ごとの「受け入れの観点」をタスクリストに写し、観点ごとに見つけたこと（なければ何を確かめたか）を残す。developer が回したテストやゲートは回し直さない。
+- 段ごとの受け入れの観点ごとに、見つけたこと（なければ何を確かめたか）を台帳に残す。developer が回したテストやゲートは回し直さない。
 
 ## 1. 準備
 
@@ -51,19 +51,21 @@ developer の成果物の受け入れの観点:
 
 自分で書いた文書と lensdiff の資料の受け入れの観点（会話を知らない読み手の立場で見る）:
 
+- **規約との照合**: developer の成果物と同じく、文書の規約を開いて照らす。
+
 - **前提の抜け**: 会話の中でだけ決まったことが抜けていないか。
 - **読み手の疑問**: なぜこの方法か、ほかの案は、影響範囲は、に答えているか。
 - **古い記述**: 変えた事実が、別の文書に古いまま残っていないか。
 
 ## 3. simplify と AI レビュー
 
-`simplify` スキルで差分全体を 4 観点で見直し、意図した挙動を保つ指摘を採用する。続けて観点ごとにサブエージェントで AI レビューし、指摘を `kind: "finding"` の JSON で scratchpad に書かせる（`code` は correctness ほか、`docs` は整合性、`shared` は対象外の参照元を含める。2 の全体レビューを correctness とする）。`error` は直して commit し、`info`・`warn` は 4 で lensdiff に流す。simplify で採用しなかった指摘も、メインエージェントが `warn` の finding として findings JSON に書き起こし、4 で lensdiff に流して人が決める。
+`simplify` スキルで差分全体を 4 観点で見直し、意図した挙動を保つ指摘を採用する。続けて観点ごとにサブエージェントで AI レビューし、指摘を、該当行と問題が起きる入力や手順を添えて `kind: "finding"` の JSON で scratchpad に書かせる（`code` は correctness ほか、`docs` は整合性、`shared` は対象外の参照元を含める。2 の全体レビューを correctness とする）。`error` は直して commit し、`info`・`warn` は 4 で lensdiff に流す。simplify で採用しなかった指摘も、メインエージェントが `warn` の finding として findings JSON に書き起こし、4 で lensdiff に流して人が決める。
 
-指摘の受け入れの観点（指摘には、該当行と問題が起きる入力や手順を求める）:
+指摘の受け入れの観点:
 
 - **覆えていない観点**: レビューの観点から漏れた領域がないか。あれば足してもう一度回す。
 - **共通の根**: 複数の指摘が同じ原因から出ていないか。出ていれば原因を直す。
-- **採否**: `error` は採否と理由を残す（lensdiff を行わない作業先では `info`・`warn` も自分で決め、理由を残す）。
+- **採否**: `error` は採否と理由を残す。
 
 ## 4. lensdiff レビュー
 
@@ -83,7 +85,7 @@ command -v lensdiff >/dev/null || npm install -g https://github.com/komtaki/lens
 
 1. push し、`develop:pr-writer` にブランチ・base・差分から読めない経緯（未マージの依存、既定で決めたこと）を渡して、draft PR を作らせる。
 2. `gh pr view` で本文を検品し、直す点は同じ pr-writer に `SendMessage` で伝える。少量でも自分では直さない。書き手と検品者が分かれないと検品にならないため（`check-pr-command.sh` が止める）。
-3. CI は `ccd_pr` があれば bind して auto-fix に任せる。なければ `develop:developer` に `gh pr checks <番号> --watch --fail-fast` で待たせ、失敗を直させる。
+3. CI は `ccd_pr` があれば bind して auto-fix に任せる。なければ `gh pr checks <番号> --watch --fail-fast` をバックグラウンドで待ち、失敗したら `develop:developer` に直させる。
 4. bot は指摘を残したまま check を通すので、`develop:pr-review-fix` で未 resolve スレッドに対応する（push 直後に空なら約 5 分後に 1 回取り直す）。
 5. 差分が変わったら、`gh pr view --json body` から差分で読めない事実を拾い、PR 番号と一緒に pr-writer に渡して書き直させる。
 6. CI の修正（auto-fix を含む）と bot の指摘への対応は、次の観点で受け入れる。
