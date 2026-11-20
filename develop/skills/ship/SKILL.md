@@ -82,13 +82,13 @@ command -v lensdiff >/dev/null || npm install -g https://github.com/komtaki/lens
 
 1. push し、`develop:pr-writer` にブランチ・base・差分から読めない経緯（未マージの依存、既定で決めたこと）を渡して、draft PR を作らせる。
 2. `gh pr view` で本文を検品し、直す点は同じ pr-writer に `SendMessage` で伝える。少量でも自分では直さない。書き手と検品者が分かれないと検品にならないため（`check-pr-command.sh` が止める）。
-3. CI は `ccd_pr` があれば bind して auto-fix に任せる。なければ `gh pr checks <番号> --watch --fail-fast` をバックグラウンドで待ち、失敗したら `develop:developer` に直させる。
-4. CI完了後 bot は指摘を残したまま check を通すので、`develop:pr-review-fix` で未 resolve スレッドに対応する（push 直後に空なら約 5 分後に 1 回取り直す）。push のたびにやり直す。CI の待ちをサブエージェントやバックグラウンドに任せたときも、完了条件はこの取り直しの結果にする。
+3. CI は `ccd_pr` があれば bind して auto-fix に任せる。なければ `gh pr checks <番号> --watch --fail-fast` をバックグラウンドで待ち、失敗したら `develop:developer` に直させ、push したらまた待つ。
+4. bot は CI の完了後に指摘を付け、指摘を残したまま check を通す。未 resolve スレッドの数は、最新の head の check がすべて完了し、その後約 5 分待ってから `develop:pr-review-fix` の「コメントの resolve」の手順 1 のクエリで取ったものだけを有効とし、それに `develop:pr-review-fix` で対応する。push で head が変わったら（auto-fix や developer の push を含む）、数え直す。CI の待ちを誰に任せても、有効な数はメインエージェントが自分で取る。
 5. 差分が変わったら、`gh pr view --json body` から差分で読めない事実を拾い、PR 番号と一緒に pr-writer に渡して書き直させる。
 6. CI の修正（auto-fix を含む）と bot の指摘への対応は、次の観点で受け入れる。
    - **同じ種類の問題**: 指摘された箇所以外にも、同じ種類の問題がないか。
    - **目的との食い違い**: 修正が、PR の目的や lensdiff で承認された内容を変えていないか。変えていれば、本文を書き直させる。
-7. 既定で決めたことと、4 で最後に取り直した未 resolve スレッドの数（head・時刻・件数）を、最終報告に並べる。
+7. 既定で決めたことと、4 で最後に有効とした数（PR の最新 head・取った時刻・件数）を、取り直さずにそのまま最終報告に並べる。
 
 ## 止めて聞く場面
 
