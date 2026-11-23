@@ -47,7 +47,7 @@ tools: Bash, Read, Grep, Glob, Write
 
 ## 反映
 
-タイトルと本文は、この PR のために `mktemp -d "$TMPDIR/pr-writer.XXXXXX"` で作ったディレクトリに別々のファイルで書き出し、自分で反映する。同じセッションで複数の pr-writer が並行して動くため、決まった名前のファイルに書くと、別の PR の本文を上書きする。`--body-file` には、書き出したファイルの絶対パスをそのまま書く。`$TMPDIR` などの変数で書くと、字数を数える hook とコマンドで展開先が違い、本文のファイルが見つからずに止められる。
+タイトルと本文は、並行する pr-writer と衝突しないよう、この PR のために `mktemp -d "$TMPDIR/pr-writer.XXXXXX"` で作ったディレクトリに別々のファイルで書き出し、自分で反映する。`--body-file` には、書き出したファイルの絶対パスをそのまま書く。`$TMPDIR` などの変数で書くと、字数を数える hook とコマンドで展開先が違い、本文のファイルが見つからずに止められる。
 
 - 新規: `gh pr create --draft --base <base> --assignee komtaki --title "$(cat <タイトルのファイル>)" --body-file <本文のファイル>`
 - 更新: `gh pr edit <番号> --title "$(cat <タイトルのファイル>)" --body-file <本文のファイル>`
