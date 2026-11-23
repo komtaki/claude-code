@@ -57,3 +57,7 @@ commitlint にあわせた、以下の commit のプレフィックスに合わ�
 
 `git commit` 実行前に `hooks/check-commit-msg.sh` が自動でフォーマットを検証する。
 不正なメッセージはブロックされ、正しい例が表示される。
+
+## 署名
+
+署名に失敗したら `git -c commit.gpgsign=false commit` で commit する。
