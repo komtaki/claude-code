@@ -79,11 +79,11 @@ command -v lensdiff >/dev/null || npm install -g https://github.com/komtaki/lens
 
 ## 5. PR
 
-1. push し、`develop:pr-writer` にブランチ・base・差分から読めない経緯（未マージの依存、既定で決めたこと）を渡して、draft PR を作らせる。
+1. push し、`develop:pr-writer` にブランチ・base・差分から読めない事実（未マージの依存、既定で決めたこと）を渡して、draft PR を作らせる。PR の中で試して捨てた方式、作り直した経過、作業中のレビューで採らなかった案は渡さない。本文は base との差分の最終形を説明するもので、作業の記録ではないため。
 2. `gh pr view` で本文を検品し、直す点は同じ pr-writer に `SendMessage` で伝える。少量でも自分では直さない。書き手と検品者が分かれないと検品にならないため（`check-pr-command.sh` が止める）。
 3. CI は `ccd_pr` があれば bind して auto-fix に任せる。なければ `gh pr checks <番号> --watch --fail-fast` をバックグラウンドで待ち、失敗したら `develop:developer` に直させる。
 4. CI完了後 bot は指摘を残したまま check を通すので、`develop:pr-review-fix` で未 resolve スレッドに対応する（push 直後に空なら約 5 分後に 1 回取り直す）。
-5. 差分が変わったら、`gh pr view --json body` から差分で読めない事実を拾い、PR 番号と一緒に pr-writer に渡して書き直させる。
+5. 差分が変わったら、`gh pr view --json body` から、今の差分にも当てはまる差分で読めない事実だけを拾い、PR 番号と一緒に pr-writer に渡して書き直させる。差分が変わった経過（何をやめ、何に変えたか）は渡さない（手順1と同じ理由）。
 6. CI の修正（auto-fix を含む）と bot の指摘への対応は、次の観点で受け入れる。
    - **同じ種類の問題**: 指摘された箇所以外にも、同じ種類の問題がないか。
    - **目的との食い違い**: 修正が、PR の目的や lensdiff で承認された内容を変えていないか。変えていれば、本文を書き直させる。
